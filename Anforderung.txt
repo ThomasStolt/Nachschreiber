@@ -1,0 +1,16 @@
+Wöchentlich gibt es bei uns einen Nachschreibetermin für versäumte Klassenarbeiten.
+Im Moment läuft die Anmeldung der Schüler noch analog und ist recht unübesichtlich.
+Es gibt drei Kategorien, die sich nach der Länge der Arbeiten unterscheiden:
+a) bis 45min
+b) 45min bis 60min
+c) ab 60min
+Die drei Gruppen schreiben in drei verschiedenen Räumen nach.
+
+Idee: Die Schülerstammdaten (Name, Vorname, Klasse) werden ins Programm importiert.
+Die Lehrkraft kann dann einen Schüler über die Klasse selektieren. Anschließend gibt sie über ein Formular die Dauer der Arbeit und das Fach ein, ggf. welche Hilfsmittel erlaubt sind. Ebenso die verantwortlich Lehrkraft.
+
+Das Programm verhindert doppelte Eingaben von Schülern (manchmal haben Schüler mehr als eine Arbeit versäumt), ordnet die Schüler den unterschiedlichen Räumen zu und platziert die Schüler auf Plätze im Raum. In jedem Raum gibt es vier Tischreihen und vier Tischspalten, also 16 Tische mit jeweils 2 Plätzen. Mehr als 32 Schüler pro Raum sind nicht möglich.
+
+Das Programm erzeugt dann einen Raumplan unter Angabe des Schülernamens, der Klasse, des Fachs, der Dauer und der Hilfsmittel.
+
+Z.B. als Exceldatei oder als Worddatei, damit ich ggf. noch nacharbeiten kann. Den Plan drucke ich dann aus und hänge ich an die entsprechende Raumtür.
