@@ -1,7 +1,7 @@
 # backend/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import upload, entries, students, seating_router, misc
+from .routers import upload, entries, students, seating_router, misc, export
 
 app = FastAPI(title="Nachschreiber")
 
@@ -16,4 +16,5 @@ app.include_router(upload.router)
 app.include_router(entries.router)
 app.include_router(students.router)
 app.include_router(seating_router.router)
+app.include_router(export.router)
 app.include_router(misc.router)
