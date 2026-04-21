@@ -70,3 +70,15 @@ class TestComputeSeating:
         session = SessionData(students=[student], entries=entries)
         plan = compute_seating(session)
         assert len(plan.room_a.assignments) == 5
+
+    def test_entries_stay_in_correct_room(self):
+        student = make_student()
+        entry_a = make_entry("A", "Mathe", duration=45)
+        entry_b = make_entry("B", "Deutsch", duration=50)
+        entry_c = make_entry("C", "Physik", duration=90)
+        session = SessionData(students=[student], entries=[entry_a, entry_b, entry_c])
+        plan = compute_seating(session)
+        assert len(plan.room_a.assignments) == 1
+        assert len(plan.room_b.assignments) == 1
+        assert len(plan.room_c.assignments) == 1
+        assert plan.room_a.assignments[0].entry.subject == "Mathe"

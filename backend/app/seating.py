@@ -18,7 +18,7 @@ def _build_room_plan(
     entries: list[Entry],
     students_map: dict[str, Student],
 ) -> RoomPlan:
-    room_entries = [e for e in entries if e.room == room]
+    room_entries = [e for e in entries if e.room == room and e.student_id in students_map]
     assignments = [
         SeatAssignment(
             desk=(i // 2) + 1,
