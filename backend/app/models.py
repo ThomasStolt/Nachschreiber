@@ -1,7 +1,7 @@
 # backend/app/models.py
 from __future__ import annotations
 from typing import Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Student(BaseModel):
@@ -15,7 +15,7 @@ class Entry(BaseModel):
     id: str
     student_id: str
     subject: str
-    duration_minutes: int
+    duration_minutes: int = Field(ge=1, le=300)
     aids: str = ""
     teacher: str
     room: Literal["A", "B", "C"]
@@ -24,14 +24,14 @@ class Entry(BaseModel):
 class EntryCreate(BaseModel):
     student_id: str
     subject: str
-    duration_minutes: int
+    duration_minutes: int = Field(ge=1, le=300)
     aids: str = ""
     teacher: str
 
 
 class SeatAssignment(BaseModel):
-    desk: int    # 1–16
-    seat: int    # 1–2
+    desk: int = Field(ge=1, le=16)
+    seat: int = Field(ge=1, le=2)
     entry: Entry
     student: Student
 
@@ -40,7 +40,7 @@ class RoomPlan(BaseModel):
     room: Literal["A", "B", "C"]
     label: str
     capacity: int = 32
-    assignments: list[SeatAssignment]
+    assignments: list[SeatAssignment] = []
 
 
 class SeatingPlan(BaseModel):
