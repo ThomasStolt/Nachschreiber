@@ -72,3 +72,39 @@ def test_room_b_for_59_minutes(client):
     sid = _upload(client)
     r = client.post("/api/entries", json={"student_id": sid, "subject": "Chemie", "duration_minutes": 59, "teacher": "T"})
     assert r.json()["room"] == "B"
+
+
+def test_get_classes(client):
+    client.post("/api/upload", files={"file": ("s.csv", SAMPLE_CSV, "text/csv")})
+    r = client.get("/api/classes")
+    assert r.status_code == 200
+    assert "10a" in r.json()
+    assert "9b" in r.json()
+
+
+def test_get_students_filtered(client):
+    client.post("/api/upload", files={"file": ("s.csv", SAMPLE_CSV, "text/csv")})
+    r = client.get("/api/students?class_name=10a")
+    assert r.status_code == 200
+    assert len(r.json()) == 1
+    assert r.json()[0]["class_name"] == "10a"
+
+
+def test_seating_plan(client):
+    sid = _upload(client)
+    client.post("/api/entries", json={"student_id": sid, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    r = client.get("/api/seating")
+    assert r.status_code == 200
+    plan = r.json()
+    assert len(plan["room_a"]["assignments"]) == 1
+    assert plan["room_a"]["assignments"][0]["desk"] == 1
+    assert plan["room_a"]["assignments"][0]["seat"] == 1
+
+
+def test_reset(client):
+    sid = _upload(client)
+    client.post("/api/entries", json={"student_id": sid, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    r = client.post("/api/reset")
+    assert r.status_code == 200
+    assert client.get("/api/entries").json() == []
+    assert len(client.get("/api/students").json()) == 2
