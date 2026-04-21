@@ -28,7 +28,7 @@ def test_parse_empty_raises():
 
 def test_parse_missing_column_raises():
     csv = b"Name;Klasse\nMueller;10a\n"
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Erwartet: Nachname;Vorname;Klasse"):
         parse_students(csv)
 
 

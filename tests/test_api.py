@@ -9,5 +9,7 @@ def test_upload_csv(client):
 
 
 def test_upload_invalid_csv(client):
-    r = client.post("/api/upload", files={"file": ("bad.csv", b"Falsch;Format\n", "text/csv")})
+    # CSV with data rows but wrong column names
+    r = client.post("/api/upload", files={"file": ("bad.csv", b"Name;Klasse\nMueller;10a\n", "text/csv")})
     assert r.status_code == 422
+    assert "Erwartet: Nachname;Vorname;Klasse" in r.json()["detail"]
