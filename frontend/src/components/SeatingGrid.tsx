@@ -20,29 +20,31 @@ function DeskCard({ desk, assignments }: { desk: number; assignments: (SeatAssig
       <p className="font-semibold mb-1 uppercase tracking-wide" style={{ color: 'var(--c-text-secondary)', fontSize: '0.65rem' }}>
         Tisch {desk}
       </p>
-      {assignments.map((a, i) => (
-        <div
-          key={i}
-          className="rounded px-1.5 py-1 mb-0.5"
-          style={{
-            background: a ? 'var(--c-bg)' : undefined,
-            border: a ? undefined : '1px dashed var(--c-border)',
-            color: a ? 'var(--c-text)' : 'var(--c-muted)',
-            minHeight: '2rem',
-          }}
-        >
-          {a ? (
-            <>
-              <p className="font-semibold truncate" style={{ fontSize: '0.7rem' }}>{a.student.last_name}, {a.student.first_name}</p>
-              <p className="truncate" style={{ fontSize: '0.65rem', color: 'var(--c-text-secondary)' }}>
-                {a.student.class_name} · {a.entry.subject} · {a.entry.duration_minutes} min
-              </p>
-            </>
-          ) : (
-            <p className="text-center" style={{ fontSize: '0.65rem' }}>frei</p>
-          )}
-        </div>
-      ))}
+      <div className="flex gap-1">
+        {assignments.map((a, i) => (
+          <div
+            key={i}
+            className="rounded px-1.5 py-1 flex-1"
+            style={{
+              background: a ? 'var(--c-bg)' : undefined,
+              border: a ? undefined : '1px dashed var(--c-border)',
+              color: a ? 'var(--c-text)' : 'var(--c-muted)',
+              minHeight: '2rem',
+            }}
+          >
+            {a ? (
+              <>
+                <p className="font-semibold truncate" style={{ fontSize: '0.7rem' }}>{a.student.last_name}, {a.student.first_name}</p>
+                <p className="truncate" style={{ fontSize: '0.65rem', color: 'var(--c-text-secondary)' }}>
+                  {a.student.class_name} · {a.entry.subject} · {a.entry.duration_minutes} min
+                </p>
+              </>
+            ) : (
+              <p className="text-center" style={{ fontSize: '0.65rem' }}>frei</p>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
