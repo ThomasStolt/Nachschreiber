@@ -37,3 +37,76 @@ def test_parse_strips_whitespace():
     students = parse_students(csv)
     assert students[0].last_name == "Mueller"
     assert students[0].class_name == "10a"
+
+
+from app.parser import parse_teachers, parse_subjects
+
+
+# --- parse_teachers ---
+
+def test_parse_teachers_valid():
+    csv = b"Lehrkraft\nFr. Schmidt\nHr. Mueller\n"
+    result = parse_teachers(csv)
+    assert result == ["Fr. Schmidt", "Hr. Mueller"]
+
+
+def test_parse_teachers_bom():
+    csv = b"\xef\xbb\xbfLehrkraft\nFr. Schmidt\n"
+    assert parse_teachers(csv) == ["Fr. Schmidt"]
+
+
+def test_parse_teachers_trims_whitespace():
+    csv = b"Lehrkraft\n  Fr. Schmidt  \n"
+    assert parse_teachers(csv) == ["Fr. Schmidt"]
+
+
+def test_parse_teachers_dedupes_preserving_order():
+    csv = b"Lehrkraft\nFr. Schmidt\nHr. Mueller\nFr. Schmidt\n"
+    assert parse_teachers(csv) == ["Fr. Schmidt", "Hr. Mueller"]
+
+
+def test_parse_teachers_skips_blank_lines():
+    csv = b"Lehrkraft\nFr. Schmidt\n\n   \nHr. Mueller\n"
+    assert parse_teachers(csv) == ["Fr. Schmidt", "Hr. Mueller"]
+
+
+def test_parse_teachers_empty_raises():
+    with pytest.raises(ValueError, match="keine Lehrkräfte"):
+        parse_teachers(b"Lehrkraft\n")
+
+
+def test_parse_teachers_wrong_header_raises():
+    with pytest.raises(ValueError, match="Erwartet: Lehrkraft"):
+        parse_teachers(b"Name\nFr. Schmidt\n")
+
+
+def test_parse_teachers_header_case_insensitive():
+    csv = b"lehrkraft\nFr. Schmidt\n"
+    assert parse_teachers(csv) == ["Fr. Schmidt"]
+
+
+# --- parse_subjects ---
+
+def test_parse_subjects_valid():
+    csv = b"Fach\nMathematik\nDeutsch\n"
+    assert parse_subjects(csv) == ["Mathematik", "Deutsch"]
+
+
+def test_parse_subjects_bom():
+    csv = b"\xef\xbb\xbfFach\nMathematik\n"
+    assert parse_subjects(csv) == ["Mathematik"]
+
+
+def test_parse_subjects_trims_and_dedupes():
+    csv = b"Fach\n  Mathematik  \nDeutsch\nMathematik\n"
+    assert parse_subjects(csv) == ["Mathematik", "Deutsch"]
+
+
+def test_parse_subjects_empty_raises():
+    with pytest.raises(ValueError, match="keine Fächer"):
+        parse_subjects(b"Fach\n")
+
+
+def test_parse_subjects_wrong_header_raises():
+    with pytest.raises(ValueError, match="Erwartet: Fach"):
+        parse_subjects(b"Subject\nMath\n")
