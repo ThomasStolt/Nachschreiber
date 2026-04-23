@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import UploadPage from './pages/UploadPage';
 import DashboardPage from './pages/DashboardPage';
+import pkg from '../package.json';
+
+const VERSION = pkg.version;
 
 function Header() {
   const navigate = useNavigate();
@@ -16,9 +19,29 @@ function Header() {
 
   return (
     <header className="border-b px-6 py-3 flex items-center justify-between no-print" style={{ borderColor: 'var(--c-border)', background: 'var(--c-surface)' }}>
-      <button onClick={() => navigate('/')} className="text-lg font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", color: 'var(--c-text)' }}>
-        Nachschreiber
-      </button>
+      <div className="flex items-baseline gap-2">
+        <button onClick={() => navigate('/')} className="text-lg font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", color: 'var(--c-text)' }}>
+          Nachschreiber
+        </button>
+        <a
+          href="https://github.com/ThomasStolt/Nachschreiber/blob/main/CHANGELOG.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Changelog öffnen"
+          style={{
+            fontSize: '0.7rem',
+            color: 'var(--c-text-secondary)',
+            textDecoration: 'none',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            padding: '1px 6px',
+            borderRadius: '4px',
+            border: '1px solid var(--c-border)',
+            background: 'var(--c-bg)',
+          }}
+        >
+          v{VERSION}
+        </a>
+      </div>
       <button onClick={toggleDark} className="text-sm px-3 py-1 rounded-md border" style={{ borderColor: 'var(--c-border)', color: 'var(--c-text-secondary)' }}>
         {dark ? '☀️' : '🌙'}
       </button>

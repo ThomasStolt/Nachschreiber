@@ -5,15 +5,22 @@ Web-App zur Verwaltung von Nachschreibeterminen. Lehrkräfte importieren Schüle
 ## Funktionen
 
 - **CSV-Import** – Schülerstammdaten (Nachname, Vorname, Klasse) einmalig hochladen
+- **Optionaler Import** von Fächer- und Lehrer-CSVs für Autocomplete im Formular
 - **Live-Dashboard** – Schüler eintragen, Sitzplan aktualisiert sich sofort
 - **Automatische Raumzuweisung** nach Prüfungsdauer:
   - Raum A: ≤ 45 min
   - Raum B: 46–59 min
   - Raum C: ≥ 60 min
+- **Individuelle Raumnamen** – Räume frei benennbar (z. B. „Bibliothek")
 - **Sitzplatzvergabe** – 16 Tische × 2 Plätze (max. 32 Schüler pro Raum)
+- **Drag & Drop** – Schüler auf Sitzplätze oder direkt auf Raum-Tabs ziehen; Dauer passt sich beim Raumwechsel automatisch an
+- **Multi-Entry-Zwischenablage** – mehrere Einträge gleichzeitig ausschneiden und neu platzieren
 - **Duplikatschutz** – selber Schüler + selbes Fach wird abgelehnt
-- **Export** als Excel (.xlsx) und Word (.docx)
+- **Export** als Excel (.xlsx, 2D-Sitzplan) und Word (.docx)
+- **Druck-Layout** im Querformat
 - **Dark Mode**
+
+Aktuelle Version und Änderungen: siehe [CHANGELOG.md](CHANGELOG.md).
 
 ## Technologie
 
@@ -48,6 +55,20 @@ Die Importdatei muss semikolongetrennt sein (wie Excel-Export):
 Nachname;Vorname;Klasse
 Müller;Anna;10a
 Schmidt;Max;9b
+```
+
+Optional lassen sich Fächer und Lehrkräfte hochladen (je eine Spalte ohne Header):
+
+```
+# beispiel_faecher.csv
+Deutsch
+Mathematik
+Englisch
+
+# beispiel_lehrer.csv
+Dr. Müller
+Frau Schmidt
+Herr Weber
 ```
 
 ## Entwicklung
