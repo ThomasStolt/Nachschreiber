@@ -19,6 +19,8 @@ class Entry(BaseModel):
     aids: str = ""
     teacher: str
     room: Literal["A", "B", "C"]
+    desk: int = Field(ge=1, le=16)
+    seat: int = Field(ge=1, le=2)
 
 
 class EntryCreate(BaseModel):
@@ -27,6 +29,12 @@ class EntryCreate(BaseModel):
     duration_minutes: int = Field(ge=1, le=300)
     aids: str = ""
     teacher: str
+
+
+class SeatUpdate(BaseModel):
+    desk: int = Field(ge=1, le=16)
+    seat: int = Field(ge=1, le=2)
+    room: Literal["A", "B", "C"]
 
 
 class SeatAssignment(BaseModel):

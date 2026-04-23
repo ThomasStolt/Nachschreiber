@@ -21,12 +21,12 @@ def _build_room_plan(
     room_entries = [e for e in entries if e.room == room and e.student_id in students_map]
     assignments = [
         SeatAssignment(
-            desk=(i // 2) + 1,
-            seat=(i % 2) + 1,
+            desk=entry.desk,
+            seat=entry.seat,
             entry=entry,
             student=students_map[entry.student_id],
         )
-        for i, entry in enumerate(room_entries)
+        for entry in room_entries
     ]
     return RoomPlan(room=room, label=label, assignments=assignments)
 
