@@ -180,3 +180,71 @@ def test_cross_room_move_to_occupied_seat_rejected(client):
     # Try to move room-A entry to room-C desk 1 seat 1 which is occupied
     r = client.patch(f"/api/entries/{eid1}/seat", json={"desk": 1, "seat": 1, "room": "C"})
     assert r.status_code == 409
+
+
+TEACHERS_CSV = b"Lehrkraft\nFr. Schmidt\nHr. Mueller\n"
+SUBJECTS_CSV = b"Fach\nMathematik\nDeutsch\n"
+
+
+def test_upload_teachers(client):
+    r = client.post("/api/upload/teachers", files={"file": ("l.csv", TEACHERS_CSV, "text/csv")})
+    assert r.status_code == 200
+    assert r.json()["teachers"] == 2
+
+
+def test_upload_teachers_invalid_header(client):
+    r = client.post("/api/upload/teachers", files={"file": ("l.csv", b"Name\nFoo\n", "text/csv")})
+    assert r.status_code == 422
+    assert "Erwartet: Lehrkraft" in r.json()["detail"]
+
+
+def test_upload_subjects(client):
+    r = client.post("/api/upload/subjects", files={"file": ("f.csv", SUBJECTS_CSV, "text/csv")})
+    assert r.status_code == 200
+    assert r.json()["subjects"] == 2
+
+
+def test_upload_subjects_invalid_header(client):
+    r = client.post("/api/upload/subjects", files={"file": ("f.csv", b"Subject\nMath\n", "text/csv")})
+    assert r.status_code == 422
+
+
+def test_get_teachers_empty(client):
+    assert client.get("/api/teachers").json() == []
+
+
+def test_get_subjects_empty(client):
+    assert client.get("/api/subjects").json() == []
+
+
+def test_get_teachers_after_upload(client):
+    client.post("/api/upload/teachers", files={"file": ("l.csv", TEACHERS_CSV, "text/csv")})
+    assert client.get("/api/teachers").json() == ["Fr. Schmidt", "Hr. Mueller"]
+
+
+def test_get_subjects_after_upload(client):
+    client.post("/api/upload/subjects", files={"file": ("f.csv", SUBJECTS_CSV, "text/csv")})
+    assert client.get("/api/subjects").json() == ["Mathematik", "Deutsch"]
+
+
+def test_upload_teachers_does_not_reset_students_or_entries(client):
+    sid = _upload(client)
+    client.post("/api/entries", json={"student_id": sid, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    client.post("/api/upload/teachers", files={"file": ("l.csv", TEACHERS_CSV, "text/csv")})
+    assert len(client.get("/api/students").json()) == 2
+    assert len(client.get("/api/entries").json()) == 1
+
+
+def test_upload_subjects_does_not_reset_students_or_entries(client):
+    sid = _upload(client)
+    client.post("/api/entries", json={"student_id": sid, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    client.post("/api/upload/subjects", files={"file": ("f.csv", SUBJECTS_CSV, "text/csv")})
+    assert len(client.get("/api/students").json()) == 2
+    assert len(client.get("/api/entries").json()) == 1
+
+
+def test_upload_teachers_overwrites_previous(client):
+    client.post("/api/upload/teachers", files={"file": ("l.csv", TEACHERS_CSV, "text/csv")})
+    newer = b"Lehrkraft\nFr. Weber\n"
+    client.post("/api/upload/teachers", files={"file": ("l.csv", newer, "text/csv")})
+    assert client.get("/api/teachers").json() == ["Fr. Weber"]
