@@ -8,24 +8,16 @@ import SeatingGrid, { RoomGrid } from '../components/SeatingGrid';
 import ExportButtons from '../components/ExportButtons';
 
 const EMPTY_PLAN: SeatingPlan = {
-  room_a: { room: 'A', label: '≤ 45 min', capacity: 32, assignments: [] },
-  room_b: { room: 'B', label: '46–59 min', capacity: 32, assignments: [] },
-  room_c: { room: 'C', label: '≥ 60 min', capacity: 32, assignments: [] },
-};
-
-const ROOM_LABEL: Record<'room_a' | 'room_b' | 'room_c', string> = {
-  room_a: 'Raum A', room_b: 'Raum B', room_c: 'Raum C',
+  room_a: { room: 'A', name: 'Raum A', label: '≤ 45 min', capacity: 32, assignments: [] },
+  room_b: { room: 'B', name: 'Raum B', label: '46–59 min', capacity: 32, assignments: [] },
+  room_c: { room: 'C', name: 'Raum C', label: '≥ 60 min', capacity: 32, assignments: [] },
 };
 
 const ROOM_LETTER: Record<'room_a' | 'room_b' | 'room_c', 'A' | 'B' | 'C'> = {
   room_a: 'A', room_b: 'B', room_c: 'C',
 };
 
-const PRINT_ROOMS = [
-  { key: 'room_a' as const, label: 'Raum A' },
-  { key: 'room_b' as const, label: 'Raum B' },
-  { key: 'room_c' as const, label: 'Raum C' },
-];
+const PRINT_ROOM_KEYS = ['room_a', 'room_b', 'room_c'] as const;
 
 export default function DashboardPage() {
   const [plan, setPlan] = useState<SeatingPlan>(EMPTY_PLAN);
@@ -123,7 +115,7 @@ export default function DashboardPage() {
         <div className="flex-1 overflow-hidden print-active-room flex flex-col">
           <div className="print-single-heading p-4 pb-0" style={{ display: 'none' }}>
             <h2 style={{ fontSize: '1.25rem', fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700 }}>
-              {ROOM_LABEL[activeRoom]} — {plan[activeRoom].label} · {plan[activeRoom].assignments.length} Schüler
+              {plan[activeRoom].name} — {plan[activeRoom].label} · {plan[activeRoom].assignments.length} Schüler
             </h2>
             <p style={{ fontSize: '0.75rem', color: '#78716c', marginTop: '0.25rem' }}>Nachschreiber — {today}</p>
           </div>
@@ -142,11 +134,11 @@ export default function DashboardPage() {
       </div>
 
       <div className="print-all-rooms">
-        {PRINT_ROOMS.map(({ key, label }) => (
+        {PRINT_ROOM_KEYS.map((key) => (
           <div key={key} className="print-room-section">
             <div style={{ marginBottom: '1rem' }}>
               <h2 style={{ fontSize: '1.25rem', fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700 }}>
-                {label} — {plan[key].label} · {plan[key].assignments.length} Schüler
+                {plan[key].name} — {plan[key].label} · {plan[key].assignments.length} Schüler
               </h2>
               <p style={{ fontSize: '0.75rem', color: '#78716c', marginTop: '0.25rem' }}>Nachschreiber — {today}</p>
             </div>

@@ -225,9 +225,11 @@ export function RoomGrid({
 // ── Clipboard Card (draggable) ────────────────────────────────────────────
 function ClipboardCard({
   assignment,
+  roomNames,
   onRemove,
 }: {
   assignment: SeatAssignment;
+  roomNames: Record<'A' | 'B' | 'C', string>;
   onRemove: (entryId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -257,7 +259,7 @@ function ClipboardCard({
         {assignment.student.class_name} · {assignment.entry.subject} · {assignment.entry.duration_minutes} min
       </span>
       <span style={{ color: 'var(--c-muted)', fontSize: '0.65rem' }}>
-        war: Raum {assignment.entry.room}, Tisch {assignment.desk}
+        war: {roomNames[assignment.entry.room]}, Tisch {assignment.desk}
       </span>
       <button
         type="button"
@@ -281,9 +283,11 @@ function ClipboardCard({
 
 function ClipboardStrip({
   entries,
+  roomNames,
   onRemove,
 }: {
   entries: SeatAssignment[];
+  roomNames: Record<'A' | 'B' | 'C', string>;
   onRemove: (entryId: string) => void;
 }) {
   return (
@@ -300,7 +304,7 @@ function ClipboardStrip({
       </span>
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flex: 1 }}>
         {entries.map(a => (
-          <ClipboardCard key={a.entry.id} assignment={a} onRemove={onRemove} />
+          <ClipboardCard key={a.entry.id} assignment={a} roomNames={roomNames} onRemove={onRemove} />
         ))}
       </div>
       <span style={{ fontSize: '0.7rem', color: 'var(--c-text-secondary)', fontStyle: 'italic' }}>
@@ -311,11 +315,7 @@ function ClipboardStrip({
 }
 
 // ── SeatingGrid (main export) ─────────────────────────────────────────────
-const ROOMS = [
-  { key: 'room_a' as const, label: 'Raum A' },
-  { key: 'room_b' as const, label: 'Raum B' },
-  { key: 'room_c' as const, label: 'Raum C' },
-];
+const ROOM_KEYS = ['room_a', 'room_b', 'room_c'] as const;
 
 export default function SeatingGrid({
   plan, activeRoom, onActiveRoomChange,
@@ -324,6 +324,11 @@ export default function SeatingGrid({
 }: Props) {
   const active = plan[activeRoom];
   const clipboardEntryIds = new Set(clipboardEntries.map(e => e.entry.id));
+  const roomNames: Record<'A' | 'B' | 'C', string> = {
+    A: plan.room_a.name,
+    B: plan.room_b.name,
+    C: plan.room_c.name,
+  };
 
   // Small activation distance so clicks on scissors / ✕ buttons don't become drags
   const sensors = useSensors(
@@ -351,11 +356,11 @@ export default function SeatingGrid({
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col h-full">
         {clipboardEntries.length > 0 && (
-          <ClipboardStrip entries={clipboardEntries} onRemove={onRemoveFromClipboard} />
+          <ClipboardStrip entries={clipboardEntries} roomNames={roomNames} onRemove={onRemoveFromClipboard} />
         )}
 
         <div className="flex gap-2 p-4 pb-2 no-print">
-          {ROOMS.map(({ key, label }) => {
+          {ROOM_KEYS.map((key) => {
             const count = plan[key].assignments.filter(a => !clipboardEntryIds.has(a.entry.id)).length;
             const isActive = activeRoom === key;
             return (
@@ -369,7 +374,7 @@ export default function SeatingGrid({
                   border: isActive ? 'none' : '1px solid var(--c-border)',
                 }}
               >
-                {label}
+                {plan[key].name}
                 <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--c-bg)' }}>
                   {count}/32
                 </span>

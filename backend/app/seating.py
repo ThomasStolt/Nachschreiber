@@ -3,6 +3,11 @@ from typing import Literal
 from .models import SessionData, RoomPlan, SeatAssignment, SeatingPlan, Entry, Student
 
 
+# Default duration used when an entry is moved across rooms:
+# the new room dictates the category, so the duration snaps to the room's representative value.
+ROOM_DEFAULT_DURATION: dict[str, int] = {"A": 45, "B": 50, "C": 60}
+
+
 def assign_room(duration_minutes: int) -> Literal["A", "B", "C"]:
     if duration_minutes <= 45:
         return "A"
@@ -24,6 +29,7 @@ def next_free_seat(entries: list[Entry], room: str) -> tuple[int, int]:
 
 def _build_room_plan(
     room: Literal["A", "B", "C"],
+    name: str,
     label: str,
     entries: list[Entry],
     students_map: dict[str, Student],
@@ -38,13 +44,14 @@ def _build_room_plan(
         )
         for entry in room_entries
     ]
-    return RoomPlan(room=room, label=label, assignments=assignments)
+    return RoomPlan(room=room, name=name, label=label, assignments=assignments)
 
 
 def compute_seating(session: SessionData) -> SeatingPlan:
     students_map = {s.id: s for s in session.students}
+    rl = session.room_labels
     return SeatingPlan(
-        room_a=_build_room_plan("A", "≤ 45 min", session.entries, students_map),
-        room_b=_build_room_plan("B", "46–59 min", session.entries, students_map),
-        room_c=_build_room_plan("C", "≥ 60 min", session.entries, students_map),
+        room_a=_build_room_plan("A", rl.A, "≤ 45 min", session.entries, students_map),
+        room_b=_build_room_plan("B", rl.B, "46–59 min", session.entries, students_map),
+        room_c=_build_room_plan("C", rl.C, "≥ 60 min", session.entries, students_map),
     )

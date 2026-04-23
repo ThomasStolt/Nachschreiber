@@ -352,3 +352,82 @@ def test_delete_student_unknown_id_404(client):
     _upload(client)
     r = client.delete("/api/students/does-not-exist")
     assert r.status_code == 404
+
+
+# --- Cross-room move adjusts duration ---
+
+def test_cross_room_move_snaps_duration_to_target_room(client):
+    sid = _upload(client)
+    # Start in Room A with 45 min
+    r = client.post("/api/entries", json={"student_id": sid, "subject": "M", "duration_minutes": 45, "teacher": "T"})
+    eid = r.json()["id"]
+    # Move to Room C (default 60 min)
+    r2 = client.patch(f"/api/entries/{eid}/seat", json={"desk": 3, "seat": 1, "room": "C"})
+    assert r2.status_code == 200
+    moved = r2.json()[0]
+    assert moved["room"] == "C"
+    assert moved["duration_minutes"] == 60
+
+
+def test_cross_room_move_to_room_b_sets_duration_50(client):
+    sid = _upload(client)
+    r = client.post("/api/entries", json={"student_id": sid, "subject": "M", "duration_minutes": 90, "teacher": "T"})
+    eid = r.json()["id"]
+    r2 = client.patch(f"/api/entries/{eid}/seat", json={"desk": 1, "seat": 1, "room": "B"})
+    assert r2.status_code == 200
+    assert r2.json()[0]["duration_minutes"] == 50
+
+
+def test_cross_room_move_to_room_a_sets_duration_45(client):
+    sid = _upload(client)
+    r = client.post("/api/entries", json={"student_id": sid, "subject": "M", "duration_minutes": 90, "teacher": "T"})
+    eid = r.json()["id"]
+    r2 = client.patch(f"/api/entries/{eid}/seat", json={"desk": 1, "seat": 1, "room": "A"})
+    assert r2.status_code == 200
+    assert r2.json()[0]["duration_minutes"] == 45
+
+
+def test_same_room_move_keeps_duration(client):
+    sid = _upload(client)
+    r = client.post("/api/entries", json={"student_id": sid, "subject": "M", "duration_minutes": 45, "teacher": "T"})
+    eid = r.json()["id"]
+    r2 = client.patch(f"/api/entries/{eid}/seat", json={"desk": 5, "seat": 2, "room": "A"})
+    assert r2.status_code == 200
+    assert r2.json()[0]["duration_minutes"] == 45
+
+
+# --- Room labels ---
+
+def test_get_room_labels_defaults(client):
+    r = client.get("/api/room-labels")
+    assert r.status_code == 200
+    assert r.json() == {"A": "Raum A", "B": "Raum B", "C": "Raum C"}
+
+
+def test_put_room_labels(client):
+    r = client.put("/api/room-labels", json={"A": "Raum 104", "B": "Raum 205", "C": "Aula"})
+    assert r.status_code == 200
+    assert r.json() == {"A": "Raum 104", "B": "Raum 205", "C": "Aula"}
+    assert client.get("/api/room-labels").json() == {"A": "Raum 104", "B": "Raum 205", "C": "Aula"}
+
+
+def test_put_room_labels_blank_falls_back_to_default(client):
+    r = client.put("/api/room-labels", json={"A": "", "B": "   ", "C": "Aula"})
+    assert r.status_code == 200
+    assert r.json() == {"A": "Raum A", "B": "Raum B", "C": "Aula"}
+
+
+def test_put_room_labels_does_not_reset_students_or_entries(client):
+    sid = _upload(client)
+    client.post("/api/entries", json={"student_id": sid, "subject": "M", "duration_minutes": 45, "teacher": "T"})
+    client.put("/api/room-labels", json={"A": "Raum 104", "B": "Raum 205", "C": "Aula"})
+    assert len(client.get("/api/students").json()) == 2
+    assert len(client.get("/api/entries").json()) == 1
+
+
+def test_seating_plan_includes_room_names(client):
+    client.put("/api/room-labels", json={"A": "Raum 104", "B": "Raum 205", "C": "Aula"})
+    plan = client.get("/api/seating").json()
+    assert plan["room_a"]["name"] == "Raum 104"
+    assert plan["room_b"]["name"] == "Raum 205"
+    assert plan["room_c"]["name"] == "Aula"

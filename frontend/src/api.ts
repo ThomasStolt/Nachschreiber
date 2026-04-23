@@ -1,4 +1,4 @@
-import type { Student, Entry, EntryCreate, SeatingPlan } from './types';
+import type { Student, Entry, EntryCreate, SeatingPlan, RoomLabels } from './types';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...init });
@@ -56,6 +56,9 @@ export const api = {
     request<string[]>('/api/teachers', { method: 'PUT', body: JSON.stringify(teachers) }),
   putSubjects: (subjects: string[]) =>
     request<string[]>('/api/subjects', { method: 'PUT', body: JSON.stringify(subjects) }),
+  getRoomLabels: () => request<RoomLabels>('/api/room-labels'),
+  putRoomLabels: (labels: RoomLabels) =>
+    request<RoomLabels>('/api/room-labels', { method: 'PUT', body: JSON.stringify(labels) }),
   getEntries: () => request<Entry[]>('/api/entries'),
   createEntry: (body: EntryCreate) =>
     request<Entry>('/api/entries', { method: 'POST', body: JSON.stringify(body) }),

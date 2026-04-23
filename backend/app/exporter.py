@@ -9,7 +9,30 @@ from docx import Document
 from .models import SeatingPlan, RoomPlan, SeatAssignment
 
 _HEADERS = ["Tisch", "Platz", "Nachname", "Vorname", "Klasse", "Fach", "Dauer (min)", "Hilfsmittel", "Lehrkraft"]
-_ROOMS = [("room_a", "Raum A"), ("room_b", "Raum B"), ("room_c", "Raum C")]
+_ROOM_ATTRS = ("room_a", "room_b", "room_c")
+
+# openpyxl sheet-name constraints: max 31 chars, cannot contain / \ ? * [ ] :
+_SHEET_NAME_INVALID = set("/\\?*[]:")
+
+
+def _sanitize_sheet_name(name: str) -> str:
+    cleaned = "".join("-" if c in _SHEET_NAME_INVALID else c for c in name).strip()[:31]
+    return cleaned or "Raum"
+
+
+def _uniquify_sheet_name(base: str, used: set[str], fallback_letter: str) -> str:
+    if base not in used:
+        return base
+    suffix = f" ({fallback_letter})"
+    trimmed = base[: 31 - len(suffix)].rstrip()
+    candidate = f"{trimmed}{suffix}"
+    i = 2
+    while candidate in used:
+        suffix = f" ({fallback_letter}{i})"
+        trimmed = base[: 31 - len(suffix)].rstrip()
+        candidate = f"{trimmed}{suffix}"
+        i += 1
+    return candidate
 
 # --- Grid layout constants ---
 _GRID_COLS = 8   # 4 desks × 2 seats per row
@@ -121,9 +144,13 @@ def _render_room_grid(ws, room_plan: RoomPlan, title: str) -> None:
 def build_excel(plan: SeatingPlan) -> bytes:
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
-    for attr, title in _ROOMS:
-        ws = wb.create_sheet(title)
-        _render_room_grid(ws, getattr(plan, attr), title)
+    used: set[str] = set()
+    for attr in _ROOM_ATTRS:
+        rp = getattr(plan, attr)
+        sheet_name = _uniquify_sheet_name(_sanitize_sheet_name(rp.name), used, rp.room)
+        used.add(sheet_name)
+        ws = wb.create_sheet(sheet_name)
+        _render_room_grid(ws, rp, rp.name)
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
@@ -158,10 +185,11 @@ def _add_room_table(doc: Document, room_plan: RoomPlan, title: str) -> None:
 def build_word(plan: SeatingPlan) -> bytes:
     doc = Document()
     doc.core_properties.title = "Nachschreiber Sitzplan"
-    for i, (attr, title) in enumerate(_ROOMS):
+    for i, attr in enumerate(_ROOM_ATTRS):
         if i > 0:
             doc.add_page_break()
-        _add_room_table(doc, getattr(plan, attr), title)
+        rp = getattr(plan, attr)
+        _add_room_table(doc, rp, rp.name)
     buf = io.BytesIO()
     doc.save(buf)
     return buf.getvalue()

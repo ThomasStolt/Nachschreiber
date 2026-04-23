@@ -1,5 +1,6 @@
 # backend/app/routers/misc.py
 from fastapi import APIRouter
+from ..models import RoomLabels
 from ..session import load, save
 
 router = APIRouter(prefix="/api", tags=["misc"])
@@ -54,3 +55,23 @@ def put_subjects(subjects: list[str]) -> list[str]:
     session.subjects = _clean_list(subjects)
     save(session)
     return session.subjects
+
+
+@router.get("/room-labels")
+def get_room_labels() -> RoomLabels:
+    return load().room_labels
+
+
+@router.put("/room-labels")
+def put_room_labels(labels: RoomLabels) -> RoomLabels:
+    session = load()
+    # Collapse empty / whitespace-only values back to the default name
+    defaults = RoomLabels()
+    cleaned = RoomLabels(
+        A=(labels.A.strip() or defaults.A),
+        B=(labels.B.strip() or defaults.B),
+        C=(labels.C.strip() or defaults.C),
+    )
+    session.room_labels = cleaned
+    save(session)
+    return cleaned

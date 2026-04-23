@@ -34,6 +34,7 @@ export interface SeatAssignment {
 
 export interface RoomPlan {
   room: 'A' | 'B' | 'C';
+  name: string;
   label: string;
   capacity: number;
   assignments: SeatAssignment[];
@@ -43,4 +44,10 @@ export interface SeatingPlan {
   room_a: RoomPlan;
   room_b: RoomPlan;
   room_c: RoomPlan;
+}
+
+export interface RoomLabels {
+  A: string;
+  B: string;
+  C: string;
 }

@@ -48,6 +48,7 @@ class SeatAssignment(BaseModel):
 
 class RoomPlan(BaseModel):
     room: Literal["A", "B", "C"]
+    name: str = ""  # user-customizable display name (e.g. "Raum 104")
     label: str
     capacity: int = 32
     assignments: list[SeatAssignment] = []
@@ -59,8 +60,15 @@ class SeatingPlan(BaseModel):
     room_c: RoomPlan
 
 
+class RoomLabels(BaseModel):
+    A: str = "Raum A"
+    B: str = "Raum B"
+    C: str = "Raum C"
+
+
 class SessionData(BaseModel):
     students: list[Student] = []
     entries: list[Entry] = []
     teachers: list[str] = []
     subjects: list[str] = []
+    room_labels: RoomLabels = Field(default_factory=RoomLabels)

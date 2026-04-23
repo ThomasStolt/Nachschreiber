@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import type { RoomLabels } from '../types';
+
+const ROOM_DURATION_LABEL: Record<'A' | 'B' | 'C', string> = {
+  A: '≤ 45 min',
+  B: '46–59 min',
+  C: '≥ 60 min',
+};
+
+const DEFAULT_ROOM_LABELS: RoomLabels = { A: 'Raum A', B: 'Raum B', C: 'Raum C' };
 
 type Status = { kind: 'idle' } | { kind: 'loading' } | { kind: 'ok'; msg: string } | { kind: 'err'; msg: string };
 
@@ -155,12 +164,23 @@ export default function UploadPage() {
   const [subjectStatus, setSubjectStatus] = useState<Status>({ kind: 'idle' });
   const [teachers, setTeachers] = useState<string[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
+  const [roomLabels, setRoomLabels] = useState<RoomLabels>(DEFAULT_ROOM_LABELS);
   const navigate = useNavigate();
 
   useEffect(() => {
     api.getTeachers().then(setTeachers).catch(() => {});
     api.getSubjects().then(setSubjects).catch(() => {});
+    api.getRoomLabels().then(setRoomLabels).catch(() => {});
   }, []);
+
+  async function commitRoomLabel(room: 'A' | 'B' | 'C', value: string) {
+    const next: RoomLabels = { ...roomLabels, [room]: value };
+    setRoomLabels(next);
+    try {
+      const saved = await api.putRoomLabels(next);
+      setRoomLabels(saved);
+    } catch { /* silent — default fallback applies server-side */ }
+  }
 
   async function uploadStudents(file: File) {
     setStudentStatus({ kind: 'loading' });
@@ -210,6 +230,37 @@ export default function UploadPage() {
           <p className="mt-1 text-sm" style={{ color: 'var(--c-text-secondary)' }}>
             CSV-Dateien hochladen oder Listen manuell pflegen.
           </p>
+        </div>
+
+        <div className="rounded-lg p-4" style={{ border: '1px solid var(--c-border)', background: 'var(--c-surface)' }}>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--c-text-secondary)' }}>
+            Raumbezeichnungen
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {(['A', 'B', 'C'] as const).map((room) => (
+              <label key={room} className="flex flex-col gap-1">
+                <span className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>
+                  Raum {room} ({ROOM_DURATION_LABEL[room]})
+                </span>
+                <input
+                  type="text"
+                  value={roomLabels[room]}
+                  onChange={(e) => setRoomLabels({ ...roomLabels, [room]: e.target.value })}
+                  onBlur={(e) => commitRoomLabel(room, e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
+                  placeholder={DEFAULT_ROOM_LABELS[room]}
+                  style={{
+                    background: 'var(--c-bg)',
+                    border: '1px solid var(--c-border)',
+                    color: 'var(--c-text)',
+                    borderRadius: '6px',
+                    padding: '6px 10px',
+                    fontSize: '0.875rem',
+                  }}
+                />
+              </label>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from ..models import Entry, EntryCreate, SeatUpdate
 from ..session import load, save
-from ..seating import assign_room, next_free_seat
+from ..seating import assign_room, next_free_seat, ROOM_DEFAULT_DURATION
 
 router = APIRouter(prefix="/api/entries", tags=["entries"])
 
@@ -68,6 +68,12 @@ def move_entry(entry_id: str, body: SeatUpdate) -> list[Entry]:
         target.desk = entry.desk
         target.seat = entry.seat
         updated.append(target)
+
+    # Cross-room move: adjust duration to match the new room's range.
+    # (Swap case is already blocked above when rooms differ, so this only fires
+    # when moving to a free seat in a different room.)
+    if body.room != entry.room:
+        entry.duration_minutes = ROOM_DEFAULT_DURATION[body.room]
 
     entry.room = body.room
     entry.desk = body.desk
