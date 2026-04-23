@@ -9,6 +9,7 @@ interface Props {
   activeRoom: 'room_a' | 'room_b' | 'room_c';
   onActiveRoomChange: (room: 'room_a' | 'room_b' | 'room_c') => void;
   onDeleteEntry?: (entryId: string) => void;
+  onDeleteStudent?: (assignment: SeatAssignment) => void;
   clipboardEntries: SeatAssignment[];
   onScissors: (assignment: SeatAssignment) => void;
   onRemoveFromClipboard: (entryId: string) => void;
@@ -22,9 +23,10 @@ interface SeatSlotProps {
   assignment: SeatAssignment | null;
   clipboardEntryIds: Set<string>;
   onScissors: (a: SeatAssignment) => void;
+  onDeleteStudent?: (a: SeatAssignment) => void;
 }
 
-function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors }: SeatSlotProps) {
+function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors, onDeleteStudent }: SeatSlotProps) {
   const dropId = `${desk}-${seat}`;
   // dnd-kit requires non-empty id even when disabled
   const dragId = assignment ? `entry-${assignment.entry.id}` : `empty-${desk}-${seat}`;
@@ -79,7 +81,7 @@ function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors }: Sea
       >
         {assignment && !isInClipboard ? (
           <>
-            <p className="font-semibold truncate" style={{ fontSize: '0.7rem', paddingRight: '22px' }}>
+            <p className="font-semibold truncate" style={{ fontSize: '0.7rem', paddingRight: onDeleteStudent ? '44px' : '22px' }}>
               {assignment.student.last_name}, {assignment.student.first_name}
             </p>
             <p className="truncate" style={{ fontSize: '0.65rem', color: 'var(--c-text-secondary)' }}>
@@ -101,6 +103,24 @@ function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors }: Sea
             >
               ✂️
             </button>
+            {onDeleteStudent && (
+              <button
+                type="button"
+                className="no-print"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onDeleteStudent(assignment); }}
+                aria-label="Schüler löschen"
+                title="Schüler aus Stammdaten löschen"
+                style={{
+                  position: 'absolute', top: '0', right: '24px',
+                  background: 'var(--c-surface)', border: '1px solid rgba(220,38,38,0.35)',
+                  borderRadius: '4px', cursor: 'pointer',
+                  fontSize: '0.8rem', padding: '1px 4px', lineHeight: 1,
+                }}
+              >
+                🗑️
+              </button>
+            )}
           </>
         ) : isInClipboard ? (
           <p style={{ fontSize: '0.65rem', color: 'var(--c-accent)', textAlign: 'center', paddingTop: '0.4rem' }}>
@@ -122,9 +142,10 @@ interface DeskCardProps {
   slots: [SeatAssignment | null, SeatAssignment | null];
   clipboardEntryIds: Set<string>;
   onScissors: (a: SeatAssignment) => void;
+  onDeleteStudent?: (a: SeatAssignment) => void;
 }
 
-function DeskCard({ desk, slots, clipboardEntryIds, onScissors }: DeskCardProps) {
+function DeskCard({ desk, slots, clipboardEntryIds, onScissors, onDeleteStudent }: DeskCardProps) {
   const hasOccupied = slots.some(a => a && !clipboardEntryIds.has(a.entry.id));
   return (
     <div
@@ -146,6 +167,7 @@ function DeskCard({ desk, slots, clipboardEntryIds, onScissors }: DeskCardProps)
             assignment={a}
             clipboardEntryIds={clipboardEntryIds}
             onScissors={onScissors}
+            onDeleteStudent={onDeleteStudent}
           />
         ))}
       </div>
@@ -158,10 +180,12 @@ export function RoomGrid({
   room_plan,
   clipboardEntryIds,
   onScissors,
+  onDeleteStudent,
 }: {
   room_plan: RoomPlan;
   clipboardEntryIds?: Set<string>;
   onScissors?: (a: SeatAssignment) => void;
+  onDeleteStudent?: (a: SeatAssignment) => void;
 }) {
   const assignmentMap = new Map<string, SeatAssignment>();
   for (const a of room_plan.assignments) {
@@ -191,6 +215,7 @@ export function RoomGrid({
           slots={slots}
           clipboardEntryIds={ids}
           onScissors={scissors}
+          onDeleteStudent={onDeleteStudent}
         />
       ))}
     </div>
@@ -295,6 +320,7 @@ const ROOMS = [
 export default function SeatingGrid({
   plan, activeRoom, onActiveRoomChange,
   clipboardEntries, onScissors, onRemoveFromClipboard, onDrop,
+  onDeleteStudent,
 }: Props) {
   const active = plan[activeRoom];
   const clipboardEntryIds = new Set(clipboardEntries.map(e => e.entry.id));
@@ -361,6 +387,7 @@ export default function SeatingGrid({
             room_plan={active}
             clipboardEntryIds={clipboardEntryIds}
             onScissors={onScissors}
+            onDeleteStudent={onDeleteStudent}
           />
         </div>
       </div>

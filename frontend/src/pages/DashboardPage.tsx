@@ -52,6 +52,28 @@ export default function DashboardPage() {
     await refresh();
   }
 
+  async function handleDeleteStudent(assignment: SeatAssignment) {
+    const studentId = assignment.student.id;
+    const allAssignments = [
+      ...plan.room_a.assignments,
+      ...plan.room_b.assignments,
+      ...plan.room_c.assignments,
+    ];
+    const entryCount = allAssignments.filter(a => a.student.id === studentId).length;
+    const name = `${assignment.student.last_name}, ${assignment.student.first_name}`;
+    const msg = entryCount > 1
+      ? `${name} aus den Stammdaten löschen?\n\n${entryCount} Nachschreib-Einträge werden ebenfalls entfernt.`
+      : `${name} aus den Stammdaten löschen?\n\nDer Nachschreib-Eintrag wird ebenfalls entfernt.`;
+    if (!confirm(msg)) return;
+    try {
+      await api.deleteStudent(studentId);
+      setClipboardEntries(prev => prev.filter(e => e.student.id !== studentId));
+      await refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Löschen fehlgeschlagen');
+    }
+  }
+
   function handleScissors(assignment: SeatAssignment) {
     setClipboardEntries(prev =>
       prev.some(e => e.entry.id === assignment.entry.id) ? prev : [...prev, assignment]
@@ -110,6 +132,7 @@ export default function DashboardPage() {
             activeRoom={activeRoom}
             onActiveRoomChange={setActiveRoom}
             onDeleteEntry={handleDeleteEntry}
+            onDeleteStudent={handleDeleteStudent}
             clipboardEntries={clipboardEntries}
             onScissors={handleScissors}
             onRemoveFromClipboard={handleRemoveFromClipboard}

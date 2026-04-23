@@ -9,14 +9,6 @@ interface Props {
   plan: SeatingPlan;
 }
 
-function countEntriesForStudent(plan: SeatingPlan, studentId: string): number {
-  return [
-    ...plan.room_a.assignments,
-    ...plan.room_b.assignments,
-    ...plan.room_c.assignments,
-  ].filter(a => a.entry.student_id === studentId).length;
-}
-
 export default function StudentForm({ onEntryAdded, plan }: Props) {
   const [classes, setClasses] = useState<string[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -58,33 +50,6 @@ export default function StudentForm({ onEntryAdded, plan }: Props) {
       setError(err instanceof Error ? err.message : 'Fehler');
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleDeleteStudent() {
-    const selected = students.find(s => s.id === form.student_id);
-    if (!selected) return;
-    const entryCount = countEntriesForStudent(plan, selected.id);
-    const msg = entryCount > 0
-      ? `${selected.last_name}, ${selected.first_name} aus den Stammdaten löschen?\n\n${entryCount} Nachschreib-Eintrag/Einträge werden ebenfalls entfernt.`
-      : `${selected.last_name}, ${selected.first_name} aus den Stammdaten löschen?`;
-    if (!confirm(msg)) return;
-    setError(null);
-    try {
-      await api.deleteStudent(selected.id);
-      setForm(f => ({ ...f, student_id: '' }));
-      const [updatedStudents, updatedClasses] = await Promise.all([
-        selectedClass ? api.getStudents(selectedClass) : Promise.resolve([] as Student[]),
-        api.getClasses(),
-      ]);
-      setStudents(updatedStudents);
-      setClasses(updatedClasses);
-      if (selectedClass && !updatedClasses.includes(selectedClass)) {
-        setSelectedClass('');
-      }
-      onEntryAdded();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Löschen fehlgeschlagen');
     }
   }
 
@@ -132,36 +97,12 @@ export default function StudentForm({ onEntryAdded, plan }: Props) {
 
       <div>
         <label style={labelStyle}>Schüler</label>
-        <div className="flex gap-1.5">
-          <select
-            style={{ ...inputStyle, flex: 1 }}
-            value={form.student_id}
-            onChange={e => set('student_id', e.target.value)}
-            required
-            disabled={!selectedClass}
-          >
-            <option value="">— Schüler wählen —</option>
-            {students.map(s => (
-              <option key={s.id} value={s.id}>{s.last_name}, {s.first_name}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={handleDeleteStudent}
-            disabled={!form.student_id}
-            title="Schüler aus Stammdaten löschen"
-            aria-label="Schüler aus Stammdaten löschen"
-            className="shrink-0 rounded-md px-2.5 text-sm disabled:opacity-30"
-            style={{
-              background: 'rgba(220,38,38,0.08)',
-              color: 'var(--c-error)',
-              border: '1px solid rgba(220,38,38,0.3)',
-              cursor: form.student_id ? 'pointer' : 'not-allowed',
-            }}
-          >
-            🗑️
-          </button>
-        </div>
+        <select style={inputStyle} value={form.student_id} onChange={e => set('student_id', e.target.value)} required disabled={!selectedClass}>
+          <option value="">— Schüler wählen —</option>
+          {students.map(s => (
+            <option key={s.id} value={s.id}>{s.last_name}, {s.first_name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Duplicate warning — shown when selected student already has entries */}
