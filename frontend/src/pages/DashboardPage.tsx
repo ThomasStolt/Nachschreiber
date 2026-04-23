@@ -30,7 +30,7 @@ const PRINT_ROOMS = [
 export default function DashboardPage() {
   const [plan, setPlan] = useState<SeatingPlan>(EMPTY_PLAN);
   const [activeRoom, setActiveRoom] = useState<'room_a' | 'room_b' | 'room_c'>('room_a');
-  const [clipboardEntry, setClipboardEntry] = useState<SeatAssignment | null>(null);
+  const [clipboardEntries, setClipboardEntries] = useState<SeatAssignment[]>([]);
   const navigate = useNavigate();
 
   const refresh = useCallback(async () => {
@@ -42,33 +42,38 @@ export default function DashboardPage() {
   async function handleReset() {
     if (!confirm('Alle Einträge löschen? Die Stammdaten bleiben erhalten.')) return;
     await api.reset();
-    setClipboardEntry(null);
+    setClipboardEntries([]);
     await refresh();
   }
 
   async function handleDeleteEntry(entryId: string) {
     await api.deleteEntry(entryId);
-    if (clipboardEntry?.entry.id === entryId) setClipboardEntry(null);
+    setClipboardEntries(prev => prev.filter(e => e.entry.id !== entryId));
     await refresh();
   }
 
+  function handleScissors(assignment: SeatAssignment) {
+    setClipboardEntries(prev =>
+      prev.some(e => e.entry.id === assignment.entry.id) ? prev : [...prev, assignment]
+    );
+  }
+
+  function handleRemoveFromClipboard(entryId: string) {
+    setClipboardEntries(prev => prev.filter(e => e.entry.id !== entryId));
+  }
+
+  // Unified drop handler: works for both seat-to-seat and clipboard-to-seat
   async function handleDrop(sourceEntryId: string, targetDesk: number, targetSeat: number) {
-    await api.moveEntry(sourceEntryId, {
-      desk: targetDesk,
-      seat: targetSeat,
-      room: ROOM_LETTER[activeRoom],
-    });
-    await refresh();
-  }
-
-  async function handlePaste(targetDesk: number, targetSeat: number) {
-    if (!clipboardEntry) return;
-    await api.moveEntry(clipboardEntry.entry.id, {
-      desk: targetDesk,
-      seat: targetSeat,
-      room: ROOM_LETTER[activeRoom],
-    });
-    setClipboardEntry(null);
+    try {
+      await api.moveEntry(sourceEntryId, {
+        desk: targetDesk,
+        seat: targetSeat,
+        room: ROOM_LETTER[activeRoom],
+      });
+      setClipboardEntries(prev => prev.filter(e => e.entry.id !== sourceEntryId));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Fehler beim Verschieben');
+    }
     await refresh();
   }
 
@@ -105,10 +110,9 @@ export default function DashboardPage() {
             activeRoom={activeRoom}
             onActiveRoomChange={setActiveRoom}
             onDeleteEntry={handleDeleteEntry}
-            clipboardEntry={clipboardEntry}
-            onScissors={setClipboardEntry}
-            onCancelClipboard={() => setClipboardEntry(null)}
-            onPaste={handlePaste}
+            clipboardEntries={clipboardEntries}
+            onScissors={handleScissors}
+            onRemoveFromClipboard={handleRemoveFromClipboard}
             onDrop={handleDrop}
           />
         </div>

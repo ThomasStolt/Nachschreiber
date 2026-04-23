@@ -1,5 +1,5 @@
 // frontend/src/components/SeatingGrid.tsx
-import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
+import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import type { SeatingPlan, RoomPlan, SeatAssignment } from '../types';
@@ -9,10 +9,9 @@ interface Props {
   activeRoom: 'room_a' | 'room_b' | 'room_c';
   onActiveRoomChange: (room: 'room_a' | 'room_b' | 'room_c') => void;
   onDeleteEntry?: (entryId: string) => void;
-  clipboardEntry: SeatAssignment | null;
+  clipboardEntries: SeatAssignment[];
   onScissors: (assignment: SeatAssignment) => void;
-  onCancelClipboard: () => void;
-  onPaste: (desk: number, seat: number) => void;
+  onRemoveFromClipboard: (entryId: string) => void;
   onDrop: (sourceEntryId: string, targetDesk: number, targetSeat: number) => void;
 }
 
@@ -21,16 +20,17 @@ interface SeatSlotProps {
   desk: number;
   seat: number;
   assignment: SeatAssignment | null;
-  clipboardEntry: SeatAssignment | null;
-  activeRoomLetter: 'A' | 'B' | 'C';
+  clipboardEntryIds: Set<string>;
   onScissors: (a: SeatAssignment) => void;
-  onPaste: (desk: number, seat: number) => void;
 }
 
-function SeatSlot({ desk, seat, assignment, clipboardEntry, activeRoomLetter, onScissors, onPaste }: SeatSlotProps) {
+function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors }: SeatSlotProps) {
   const dropId = `${desk}-${seat}`;
   // dnd-kit requires non-empty id even when disabled
   const dragId = assignment ? `entry-${assignment.entry.id}` : `empty-${desk}-${seat}`;
+
+  // Only true when THIS slot's entry is in the clipboard (fixes empty-slot bug)
+  const isInClipboard = assignment ? clipboardEntryIds.has(assignment.entry.id) : false;
 
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: dropId });
   const {
@@ -41,17 +41,11 @@ function SeatSlot({ desk, seat, assignment, clipboardEntry, activeRoomLetter, on
     isDragging,
   } = useDraggable({
     id: dragId,
-    disabled: !assignment || clipboardEntry !== null,
+    // Don't allow dragging the ghost source or empty slots
+    disabled: !assignment || isInClipboard,
   });
 
   const dragStyle = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
-
-  const isClipboardSource = clipboardEntry?.entry.id === assignment?.entry.id;
-
-  // Paste target: empty slot always; occupied slot only in same room (for swap); never the source slot itself
-  const isPasteTarget = clipboardEntry !== null
-    && !isClipboardSource
-    && (!assignment || activeRoomLetter === clipboardEntry.entry.room);
 
   const slotStyle: React.CSSProperties = {
     flex: 1,
@@ -59,34 +53,33 @@ function SeatSlot({ desk, seat, assignment, clipboardEntry, activeRoomLetter, on
     padding: '3px 4px',
     minHeight: '2.25rem',
     position: 'relative',
-    cursor: isPasteTarget ? 'pointer' : assignment && !clipboardEntry ? 'grab' : 'default',
-    background: isClipboardSource
+    cursor: assignment && !isInClipboard ? 'grab' : 'default',
+    background: isInClipboard
       ? 'rgba(245,158,11,0.08)'
       : assignment
         ? 'var(--c-bg)'
         : undefined,
-    border: isPasteTarget
-      ? '1.5px dashed var(--c-accent)'
-      : isClipboardSource
+    border: isOver
+      ? '1.5px solid var(--c-accent)'
+      : isInClipboard
         ? '1px dashed var(--c-accent)'
         : assignment
           ? undefined
           : '1px dashed var(--c-border)',
     opacity: isDragging ? 0.4 : 1,
-    boxShadow: isOver && !isPasteTarget ? '0 0 0 2px var(--c-accent)' : undefined,
+    boxShadow: isOver ? '0 0 0 1px var(--c-accent)' : undefined,
   };
 
   return (
     <div ref={setDropRef} style={{ flex: 1 }}>
       <div
-        ref={assignment && !clipboardEntry ? setDragRef : null}
+        ref={assignment && !isInClipboard ? setDragRef : null}
         style={{ ...slotStyle, ...dragStyle }}
-        onClick={isPasteTarget ? () => onPaste(desk, seat) : undefined}
-        {...(assignment && !clipboardEntry ? { ...attributes, ...listeners } : {})}
+        {...(assignment && !isInClipboard ? { ...attributes, ...listeners } : {})}
       >
-        {assignment && !isClipboardSource ? (
+        {assignment && !isInClipboard ? (
           <>
-            <p className="font-semibold truncate" style={{ fontSize: '0.7rem', paddingRight: '18px' }}>
+            <p className="font-semibold truncate" style={{ fontSize: '0.7rem', paddingRight: '22px' }}>
               {assignment.student.last_name}, {assignment.student.first_name}
             </p>
             <p className="truncate" style={{ fontSize: '0.65rem', color: 'var(--c-text-secondary)' }}>
@@ -108,13 +101,9 @@ function SeatSlot({ desk, seat, assignment, clipboardEntry, activeRoomLetter, on
               ✂️
             </button>
           </>
-        ) : isClipboardSource ? (
+        ) : isInClipboard ? (
           <p style={{ fontSize: '0.65rem', color: 'var(--c-accent)', textAlign: 'center', paddingTop: '0.4rem' }}>
             ✂️ ausgeschnitten
-          </p>
-        ) : isPasteTarget ? (
-          <p style={{ fontSize: '0.65rem', color: 'var(--c-accent)', textAlign: 'center', paddingTop: '0.4rem' }}>
-            📋 einsetzen
           </p>
         ) : (
           <p style={{ fontSize: '0.65rem', color: 'var(--c-muted)', textAlign: 'center', paddingTop: '0.4rem' }}>
@@ -130,20 +119,18 @@ function SeatSlot({ desk, seat, assignment, clipboardEntry, activeRoomLetter, on
 interface DeskCardProps {
   desk: number;
   slots: [SeatAssignment | null, SeatAssignment | null];
-  clipboardEntry: SeatAssignment | null;
-  activeRoomLetter: 'A' | 'B' | 'C';
+  clipboardEntryIds: Set<string>;
   onScissors: (a: SeatAssignment) => void;
-  onPaste: (desk: number, seat: number) => void;
 }
 
-function DeskCard({ desk, slots, clipboardEntry, activeRoomLetter, onScissors, onPaste }: DeskCardProps) {
-  const hasOccupied = slots.some(Boolean);
+function DeskCard({ desk, slots, clipboardEntryIds, onScissors }: DeskCardProps) {
+  const hasOccupied = slots.some(a => a && !clipboardEntryIds.has(a.entry.id));
   return (
     <div
       className="rounded-lg p-2 text-xs"
       style={{
         background: 'var(--c-surface)',
-        border: `1px ${hasOccupied ? 'solid' : 'dashed'} ${hasOccupied ? 'var(--c-accent)' : clipboardEntry ? 'rgba(245,158,11,0.4)' : 'var(--c-border)'}`,
+        border: `1px ${hasOccupied ? 'solid' : 'dashed'} ${hasOccupied ? 'var(--c-accent)' : 'var(--c-border)'}`,
       }}
     >
       <p className="font-semibold mb-1 uppercase tracking-wide" style={{ color: 'var(--c-text-secondary)', fontSize: '0.65rem' }}>
@@ -156,10 +143,8 @@ function DeskCard({ desk, slots, clipboardEntry, activeRoomLetter, onScissors, o
             desk={desk}
             seat={i + 1}
             assignment={a}
-            clipboardEntry={clipboardEntry}
-            activeRoomLetter={activeRoomLetter}
+            clipboardEntryIds={clipboardEntryIds}
             onScissors={onScissors}
-            onPaste={onPaste}
           />
         ))}
       </div>
@@ -170,16 +155,12 @@ function DeskCard({ desk, slots, clipboardEntry, activeRoomLetter, onScissors, o
 // ── Room Grid ─────────────────────────────────────────────────────────────
 export function RoomGrid({
   room_plan,
-  clipboardEntry = null,
+  clipboardEntryIds,
   onScissors,
-  onPaste,
-  onDrop,
 }: {
   room_plan: RoomPlan;
-  clipboardEntry?: SeatAssignment | null;
+  clipboardEntryIds?: Set<string>;
   onScissors?: (a: SeatAssignment) => void;
-  onPaste?: (desk: number, seat: number) => void;
-  onDrop?: (sourceEntryId: string, targetDesk: number, targetSeat: number) => void;
 }) {
   const assignmentMap = new Map<string, SeatAssignment>();
   for (const a of room_plan.assignments) {
@@ -197,67 +178,108 @@ export function RoomGrid({
     };
   });
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || !onDrop) return;
-    const entryId = (active.id as string).replace('entry-', '');
-    const parts = (over.id as string).split('-');
-    const desk = Number(parts[0]);
-    const seat = Number(parts[1]);
-    if (!isNaN(desk) && !isNaN(seat)) {
-      onDrop(entryId, desk, seat);
-    }
-  }
-
-  const noop = () => {};
+  const ids = clipboardEntryIds ?? new Set<string>();
+  const scissors = onScissors ?? (() => {});
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-4 gap-2">
-        {desks.map(({ desk, slots }) => (
-          <DeskCard
-            key={desk}
-            desk={desk}
-            slots={slots}
-            clipboardEntry={clipboardEntry}
-            activeRoomLetter={room_plan.room}
-            onScissors={onScissors ?? noop}
-            onPaste={onPaste ?? noop}
-          />
-        ))}
-      </div>
-    </DndContext>
+    <div className="grid grid-cols-4 gap-2">
+      {desks.map(({ desk, slots }) => (
+        <DeskCard
+          key={desk}
+          desk={desk}
+          slots={slots}
+          clipboardEntryIds={ids}
+          onScissors={scissors}
+        />
+      ))}
+    </div>
   );
 }
 
-// ── Clipboard Strip ───────────────────────────────────────────────────────
-function ClipboardStrip({ assignment, onCancel }: { assignment: SeatAssignment; onCancel: () => void }) {
+// ── Clipboard Card (draggable) ────────────────────────────────────────────
+function ClipboardCard({
+  assignment,
+  onRemove,
+}: {
+  assignment: SeatAssignment;
+  onRemove: (entryId: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `clip-${assignment.entry.id}`,
+  });
+  const style: React.CSSProperties = {
+    transform: transform ? CSS.Translate.toString(transform) : undefined,
+    opacity: isDragging ? 0.4 : 1,
+    background: 'var(--c-surface)',
+    border: '1px solid var(--c-accent)',
+    borderRadius: '6px',
+    padding: '4px 28px 4px 8px',
+    fontSize: '0.75rem',
+    cursor: 'grab',
+    position: 'relative',
+    display: 'inline-flex',
+    flexDirection: 'column',
+    gap: '1px',
+    minWidth: '160px',
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <span style={{ fontWeight: 600, color: 'var(--c-text)' }}>
+        {assignment.student.last_name}, {assignment.student.first_name}
+      </span>
+      <span style={{ color: 'var(--c-text-secondary)', fontSize: '0.7rem' }}>
+        {assignment.student.class_name} · {assignment.entry.subject} · {assignment.entry.duration_minutes} min
+      </span>
+      <span style={{ color: 'var(--c-muted)', fontSize: '0.65rem' }}>
+        war: Raum {assignment.entry.room}, Tisch {assignment.desk}
+      </span>
+      <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); onRemove(assignment.entry.id); }}
+        aria-label="Aus Zwischenablage entfernen"
+        title="Aus Zwischenablage entfernen"
+        style={{
+          position: 'absolute', top: '2px', right: '2px',
+          background: 'var(--c-bg)', border: '1px solid var(--c-border)',
+          borderRadius: '4px', cursor: 'pointer',
+          fontSize: '0.7rem', padding: '0px 5px', lineHeight: 1.2,
+          color: 'var(--c-text-secondary)',
+        }}
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+function ClipboardStrip({
+  entries,
+  onRemove,
+}: {
+  entries: SeatAssignment[];
+  onRemove: (entryId: string) => void;
+}) {
   return (
     <div
-      className="flex items-center gap-3 px-4 py-2 text-sm no-print"
+      className="px-4 py-2 no-print"
       style={{
         background: 'rgba(245,158,11,0.12)',
         borderBottom: '1px solid rgba(245,158,11,0.3)',
+        display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap',
       }}
     >
-      <span>📋</span>
-      <span style={{ flex: 1 }}>
-        <strong style={{ color: 'var(--c-accent)' }}>Zwischenablage:</strong>{' '}
-        <span style={{ color: 'var(--c-text)' }}>
-          {assignment.student.last_name}, {assignment.student.first_name}
-        </span>{' '}
-        <span style={{ color: 'var(--c-text-secondary)' }}>
-          · {assignment.student.class_name} · {assignment.entry.subject} · {assignment.entry.duration_minutes} min
-          {' '}(war: Raum {assignment.entry.room}, Tisch {assignment.desk})
-        </span>
+      <span style={{ fontSize: '0.85rem' }}>
+        📋 <strong style={{ color: 'var(--c-accent)' }}>Zwischenablage ({entries.length}):</strong>
       </span>
-      <button
-        onClick={onCancel}
-        className="text-sm px-2 py-0.5 rounded border"
-        style={{ borderColor: 'var(--c-border)', color: 'var(--c-text-secondary)' }}
-      >
-        ✕ Abbrechen
-      </button>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flex: 1 }}>
+        {entries.map(a => (
+          <ClipboardCard key={a.entry.id} assignment={a} onRemove={onRemove} />
+        ))}
+      </div>
+      <span style={{ fontSize: '0.7rem', color: 'var(--c-text-secondary)', fontStyle: 'italic' }}>
+        Karten auf Zielplatz ziehen
+      </span>
     </div>
   );
 }
@@ -270,55 +292,77 @@ const ROOMS = [
 ];
 
 export default function SeatingGrid({
-  plan, activeRoom, onActiveRoomChange, onDeleteEntry: _onDeleteEntry,
-  clipboardEntry, onScissors, onCancelClipboard, onPaste, onDrop,
+  plan, activeRoom, onActiveRoomChange,
+  clipboardEntries, onScissors, onRemoveFromClipboard, onDrop,
 }: Props) {
   const active = plan[activeRoom];
+  const clipboardEntryIds = new Set(clipboardEntries.map(e => e.entry.id));
+
+  // Small activation distance so clicks on scissors / ✕ buttons don't become drags
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over) return;
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    const parts = overId.split('-');
+    const desk = Number(parts[0]);
+    const seat = Number(parts[1]);
+    if (isNaN(desk) || isNaN(seat)) return;
+
+    let entryId: string | null = null;
+    if (activeId.startsWith('entry-')) entryId = activeId.substring('entry-'.length);
+    else if (activeId.startsWith('clip-')) entryId = activeId.substring('clip-'.length);
+
+    if (entryId) onDrop(entryId, desk, seat);
+  }
 
   return (
-    <div className="flex flex-col h-full">
-      {clipboardEntry && (
-        <ClipboardStrip assignment={clipboardEntry} onCancel={onCancelClipboard} />
-      )}
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <div className="flex flex-col h-full">
+        {clipboardEntries.length > 0 && (
+          <ClipboardStrip entries={clipboardEntries} onRemove={onRemoveFromClipboard} />
+        )}
 
-      <div className="flex gap-2 p-4 pb-2 no-print">
-        {ROOMS.map(({ key, label }) => {
-          const count = plan[key].assignments.length;
-          const isActive = activeRoom === key;
-          return (
-            <button
-              key={key}
-              onClick={() => onActiveRoomChange(key)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                background: isActive ? 'var(--c-accent)' : 'var(--c-surface)',
-                color: isActive ? 'white' : 'var(--c-text-secondary)',
-                border: isActive ? 'none' : '1px solid var(--c-border)',
-              }}
-            >
-              {label}
-              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--c-bg)' }}>
-                {count}/32
-              </span>
-            </button>
-          );
-        })}
+        <div className="flex gap-2 p-4 pb-2 no-print">
+          {ROOMS.map(({ key, label }) => {
+            const count = plan[key].assignments.filter(a => !clipboardEntryIds.has(a.entry.id)).length;
+            const isActive = activeRoom === key;
+            return (
+              <button
+                key={key}
+                onClick={() => onActiveRoomChange(key)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  background: isActive ? 'var(--c-accent)' : 'var(--c-surface)',
+                  color: isActive ? 'white' : 'var(--c-text-secondary)',
+                  border: isActive ? 'none' : '1px solid var(--c-border)',
+                }}
+              >
+                {label}
+                <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--c-bg)' }}>
+                  {count}/32
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="px-4 text-xs pb-2 no-print" style={{ color: 'var(--c-text-secondary)' }}>
+          {active.label} · {active.assignments.filter(a => !clipboardEntryIds.has(a.entry.id)).length} Schüler
+        </p>
+
+        <div className="overflow-y-auto flex-1 px-4 pb-4">
+          <RoomGrid
+            room_plan={active}
+            clipboardEntryIds={clipboardEntryIds}
+            onScissors={onScissors}
+          />
+        </div>
       </div>
-
-      <p className="px-4 text-xs pb-2 no-print" style={{ color: 'var(--c-text-secondary)' }}>
-        {active.label} · {active.assignments.length} Schüler
-        {clipboardEntry && <span style={{ color: 'var(--c-accent)' }}> · Zielplatz wählen oder Raum wechseln</span>}
-      </p>
-
-      <div className="overflow-y-auto flex-1 px-4 pb-4">
-        <RoomGrid
-          room_plan={active}
-          clipboardEntry={clipboardEntry}
-          onScissors={onScissors}
-          onPaste={onPaste}
-          onDrop={onDrop}
-        />
-      </div>
-    </div>
+    </DndContext>
   );
 }
