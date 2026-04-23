@@ -16,6 +16,7 @@ function OptionalUpload({
   onUpload: (file: File) => Promise<string>;
 }) {
   const [status, setStatus] = useState<OptionalStatus>({ kind: 'idle' });
+  const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function handle(file: File) {
@@ -29,20 +30,38 @@ function OptionalUpload({
   }
 
   return (
-    <div className="rounded-lg p-4" style={{ border: '1px solid var(--c-border)', background: 'var(--c-surface)' }}>
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="font-medium">{title}</p>
-          <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>{hint}</p>
+    <div>
+      <div
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          const f = e.dataTransfer.files[0];
+          if (f) handle(f);
+        }}
+        className="cursor-pointer rounded-lg border-2 border-dashed px-4 py-3 transition-colors"
+        style={{
+          borderColor: dragging ? 'var(--c-accent)' : 'var(--c-border)',
+          background: dragging ? 'rgba(217,119,6,0.05)' : 'var(--c-surface)',
+        }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-medium text-sm">📄 {title}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--c-text-secondary)' }}>{hint}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--c-text-secondary)' }}>
+              Hier ablegen oder klicken zum Auswählen
+            </p>
+          </div>
+          <span
+            className="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium"
+            style={{ background: 'var(--c-accent)', color: 'white' }}
+          >
+            CSV wählen
+          </span>
         </div>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium"
-          style={{ background: 'var(--c-accent)', color: 'white' }}
-        >
-          CSV wählen
-        </button>
         <input
           ref={inputRef}
           type="file"
@@ -52,13 +71,13 @@ function OptionalUpload({
         />
       </div>
       {status.kind === 'loading' && (
-        <p className="mt-2 text-xs" style={{ color: 'var(--c-text-secondary)' }}>Wird hochgeladen…</p>
+        <p className="mt-1.5 text-xs" style={{ color: 'var(--c-text-secondary)' }}>Wird hochgeladen…</p>
       )}
       {status.kind === 'ok' && (
-        <p className="mt-2 text-xs" style={{ color: 'var(--c-accent)' }}>✓ {status.msg}</p>
+        <p className="mt-1.5 text-xs" style={{ color: 'var(--c-accent)' }}>✓ {status.msg}</p>
       )}
       {status.kind === 'err' && (
-        <p className="mt-2 text-xs" style={{ color: 'var(--c-error)' }}>{status.msg}</p>
+        <p className="mt-1.5 text-xs" style={{ color: 'var(--c-error)' }}>{status.msg}</p>
       )}
     </div>
   );
