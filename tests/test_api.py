@@ -248,3 +248,66 @@ def test_upload_teachers_overwrites_previous(client):
     newer = b"Lehrkraft\nFr. Weber\n"
     client.post("/api/upload/teachers", files={"file": ("l.csv", newer, "text/csv")})
     assert client.get("/api/teachers").json() == ["Fr. Weber"]
+
+
+# --- PUT endpoints for inline editing ---
+
+def test_put_teachers_replaces_list(client):
+    r = client.put("/api/teachers", json=["Fr. A", "Hr. B"])
+    assert r.status_code == 200
+    assert r.json() == ["Fr. A", "Hr. B"]
+    assert client.get("/api/teachers").json() == ["Fr. A", "Hr. B"]
+
+
+def test_put_teachers_trims_and_dedupes(client):
+    r = client.put("/api/teachers", json=["  Fr. A  ", "Fr. A", "Hr. B"])
+    assert r.status_code == 200
+    assert r.json() == ["Fr. A", "Hr. B"]
+
+
+def test_put_teachers_skips_empty_entries(client):
+    r = client.put("/api/teachers", json=["Fr. A", "", "   ", "Hr. B"])
+    assert r.status_code == 200
+    assert r.json() == ["Fr. A", "Hr. B"]
+
+
+def test_put_teachers_empty_list_clears(client):
+    client.put("/api/teachers", json=["Fr. A"])
+    r = client.put("/api/teachers", json=[])
+    assert r.status_code == 200
+    assert client.get("/api/teachers").json() == []
+
+
+def test_put_teachers_does_not_reset_students_or_entries(client):
+    sid = _upload(client)
+    client.post("/api/entries", json={"student_id": sid, "subject": "M", "duration_minutes": 45, "teacher": "T"})
+    client.put("/api/teachers", json=["Fr. A"])
+    assert len(client.get("/api/students").json()) == 2
+    assert len(client.get("/api/entries").json()) == 1
+
+
+def test_put_subjects_replaces_list(client):
+    r = client.put("/api/subjects", json=["Mathe", "Deutsch"])
+    assert r.status_code == 200
+    assert r.json() == ["Mathe", "Deutsch"]
+
+
+def test_put_subjects_trims_and_dedupes(client):
+    r = client.put("/api/subjects", json=["  Mathe  ", "Mathe", "Deutsch"])
+    assert r.status_code == 200
+    assert r.json() == ["Mathe", "Deutsch"]
+
+
+def test_put_subjects_empty_list_clears(client):
+    client.put("/api/subjects", json=["Mathe"])
+    r = client.put("/api/subjects", json=[])
+    assert r.status_code == 200
+    assert client.get("/api/subjects").json() == []
+
+
+def test_put_subjects_does_not_reset_students_or_entries(client):
+    sid = _upload(client)
+    client.post("/api/entries", json={"student_id": sid, "subject": "M", "duration_minutes": 45, "teacher": "T"})
+    client.put("/api/subjects", json=["Mathe"])
+    assert len(client.get("/api/students").json()) == 2
+    assert len(client.get("/api/entries").json()) == 1

@@ -45,6 +45,10 @@ export const api = {
     request<Student[]>(className ? `/api/students?class_name=${encodeURIComponent(className)}` : '/api/students'),
   getTeachers: () => request<string[]>('/api/teachers'),
   getSubjects: () => request<string[]>('/api/subjects'),
+  putTeachers: (teachers: string[]) =>
+    request<string[]>('/api/teachers', { method: 'PUT', body: JSON.stringify(teachers) }),
+  putSubjects: (subjects: string[]) =>
+    request<string[]>('/api/subjects', { method: 'PUT', body: JSON.stringify(subjects) }),
   getEntries: () => request<Entry[]>('/api/entries'),
   createEntry: (body: EntryCreate) =>
     request<Entry>('/api/entries', { method: 'POST', body: JSON.stringify(body) }),
