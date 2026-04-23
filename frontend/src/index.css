@@ -38,6 +38,59 @@
   h1, h2, h3 {
     font-family: 'Bricolage Grotesque', sans-serif;
   }
+
+  /* Native select: custom chevron, hide OS arrow */
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path fill='none' stroke='%23a8a29e' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round' d='M1.5 2l4.5 4 4.5-4'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px 8px;
+    padding-right: 30px !important;
+    cursor: pointer;
+  }
+
+  select:focus {
+    outline: none;
+    border-color: var(--c-accent) !important;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+  }
+
+  select:hover:not(:disabled) {
+    border-color: var(--c-accent-hover) !important;
+  }
+
+  select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  input[type="text"], input[type="number"], input:not([type]) {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: var(--c-accent) !important;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+  }
+
+  /* Thin, subtle scrollbars everywhere (webkit) */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--c-border);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--c-muted); }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-border) transparent;
+  }
 }
 
 @media print {
