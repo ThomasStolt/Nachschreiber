@@ -1,45 +1,120 @@
 # backend/app/exporter.py
 import io
 import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 from docx import Document
-from .models import SeatingPlan, RoomPlan
+from .models import SeatingPlan, RoomPlan, SeatAssignment
 
 _HEADERS = ["Tisch", "Platz", "Nachname", "Vorname", "Klasse", "Fach", "Dauer (min)", "Hilfsmittel", "Lehrkraft"]
 _ROOMS = [("room_a", "Raum A"), ("room_b", "Raum B"), ("room_c", "Raum C")]
 
+# --- Grid layout constants ---
+_GRID_COLS = 8   # 4 desks × 2 seats per row
+_GRID_ROWS = 4   # 4 desk rows
+_TITLE_ROW = 1
+_PULT_ROW = 2
+_FIRST_SEAT_ROW = 4  # row 3 stays blank as visual spacer
+_SEAT_ROW_HEIGHT = 85
 
-def _fill_sheet(ws, room_plan: RoomPlan) -> None:
-    ws.append(_HEADERS)
-    for cell in ws[1]:
-        cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = PatternFill("solid", fgColor="D97706")
-        cell.alignment = Alignment(horizontal="center")
+_THIN = Side(style="thin", color="999999")
+_THICK = Side(style="medium", color="333333")
+
+
+def _style_title_row(ws, text: str) -> None:
+    ws.cell(_TITLE_ROW, 1).value = text
+    ws.merge_cells(start_row=_TITLE_ROW, start_column=1, end_row=_TITLE_ROW, end_column=_GRID_COLS)
+    c = ws.cell(_TITLE_ROW, 1)
+    c.font = Font(bold=True, color="FFFFFF", size=14)
+    c.fill = PatternFill("solid", fgColor="D97706")
+    c.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[_TITLE_ROW].height = 26
+
+
+def _style_pult_row(ws) -> None:
+    ws.cell(_PULT_ROW, 1).value = "Lehrpult"
+    ws.merge_cells(start_row=_PULT_ROW, start_column=1, end_row=_PULT_ROW, end_column=_GRID_COLS)
+    c = ws.cell(_PULT_ROW, 1)
+    c.font = Font(italic=True, color="666666", size=10)
+    c.fill = PatternFill("solid", fgColor="EEEEEE")
+    c.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[_PULT_ROW].height = 18
+
+
+def _seat_cell_content(assignment: SeatAssignment | None, desk: int, seat: int) -> str:
+    label = f"T{desk}.S{seat}"
+    if assignment is None:
+        return label
+    st = assignment.student
+    en = assignment.entry
+    lines = [
+        label,
+        f"{st.last_name}, {st.first_name}",
+        st.class_name,
+        f"{en.subject} · {en.duration_minutes} min",
+        en.teacher,
+    ]
+    if en.aids.strip():
+        lines.append(en.aids.strip())
+    return "\n".join(lines)
+
+
+def _style_seat_cell(cell, filled: bool, desk_col_index: int) -> None:
+    # desk_col_index 0..3 → which desk column within the row
+    # Seats 1 and 2 of the same desk sit in columns (2*desk_col_index+1, +2).
+    # Between desks we want a THICK right border on seat 2 (when desk_col_index < 3).
+    # Between desk rows we want THICK top/bottom borders.
+    # Inside a desk, between seat 1 and seat 2, THIN vertical border.
+    col_within_desk = (cell.column - 1) % 2  # 0 = seat1, 1 = seat2
+    left = _THICK if col_within_desk == 0 else _THIN
+    right = _THICK if col_within_desk == 1 else _THIN
+    # Outer top/bottom of each desk row is THICK
+    top = _THICK
+    bottom = _THICK
+    cell.border = Border(left=left, right=right, top=top, bottom=bottom)
+    cell.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center")
+    cell.font = Font(size=10) if filled else Font(size=9, color="AAAAAA")
+
+
+def _render_room_grid(ws, room_plan: RoomPlan, title: str) -> None:
+    _style_title_row(ws, f"{title} — Nachschreiber")
+    _style_pult_row(ws)
+    # Row 3 is blank spacer
+    ws.row_dimensions[3].height = 8
 
     assignment_map = {(a.desk, a.seat): a for a in room_plan.assignments}
-    for desk in range(1, 17):
-        for seat in range(1, 3):
-            a = assignment_map.get((desk, seat))
-            if a:
-                ws.append([
-                    desk, seat,
-                    a.student.last_name, a.student.first_name, a.student.class_name,
-                    a.entry.subject, a.entry.duration_minutes,
-                    a.entry.aids, a.entry.teacher,
-                ])
-            else:
-                ws.append([desk, seat, "", "", "", "", "", "", ""])
 
-    for col in ws.columns:
-        ws.column_dimensions[col[0].column_letter].width = 16
+    for row_idx in range(_GRID_ROWS):
+        excel_row = _FIRST_SEAT_ROW + row_idx
+        ws.row_dimensions[excel_row].height = _SEAT_ROW_HEIGHT
+        for desk_col in range(4):  # 4 desks per row
+            desk_number = row_idx * 4 + desk_col + 1  # 1..16
+            for seat_in_desk in range(2):
+                seat_number = seat_in_desk + 1  # 1 or 2
+                excel_col = desk_col * 2 + seat_in_desk + 1
+                cell = ws.cell(excel_row, excel_col)
+                assignment = assignment_map.get((desk_number, seat_number))
+                cell.value = _seat_cell_content(assignment, desk_number, seat_number)
+                _style_seat_cell(cell, filled=assignment is not None, desk_col_index=desk_col)
+
+    # Uniform column widths for all 8 seat columns
+    for col_i in range(1, _GRID_COLS + 1):
+        ws.column_dimensions[get_column_letter(col_i)].width = 20
+
+    # Print setup: landscape, fit to 1 page
+    ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 1
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.print_options.horizontalCentered = True
 
 
 def build_excel(plan: SeatingPlan) -> bytes:
     wb = openpyxl.Workbook()
-    wb.remove(wb.active)  # remove default sheet
+    wb.remove(wb.active)
     for attr, title in _ROOMS:
         ws = wb.create_sheet(title)
-        _fill_sheet(ws, getattr(plan, attr))
+        _render_room_grid(ws, getattr(plan, attr), title)
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
