@@ -1,16 +1,14 @@
 // frontend/src/components/StudentForm.tsx
 import { useState, useEffect } from 'react';
 import { api } from '../api';
-import type { Student, EntryCreate } from '../types';
-
-import type { SeatingPlan } from '../types';
+import type { Student, EntryCreate, SeatingPlan } from '../types';
 
 interface Props {
   onEntryAdded: () => void;
-  plan?: SeatingPlan; // TODO: Task 3 replaces this file — plan will be required and used for duplicate warning
+  plan: SeatingPlan;
 }
 
-export default function StudentForm({ onEntryAdded }: Props) {
+export default function StudentForm({ onEntryAdded, plan }: Props) {
   const [classes, setClasses] = useState<string[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedClass, setSelectedClass] = useState('');
@@ -48,6 +46,17 @@ export default function StudentForm({ onEntryAdded }: Props) {
     }
   }
 
+  // Derive existing seat assignments for the selected student from the live plan
+  const existingAssignments = form.student_id
+    ? [
+        ...plan.room_a.assignments,
+        ...plan.room_b.assignments,
+        ...plan.room_c.assignments,
+      ].filter(a => a.entry.student_id === form.student_id)
+    : [];
+
+  const hasWarning = existingAssignments.length > 0;
+
   const inputStyle = {
     background: 'var(--c-bg)',
     border: '1px solid var(--c-border)',
@@ -58,7 +67,12 @@ export default function StudentForm({ onEntryAdded }: Props) {
     fontSize: '0.875rem',
   } as const;
 
-  const labelStyle = { fontSize: '0.75rem', color: 'var(--c-text-secondary)', marginBottom: '3px', display: 'block' } as const;
+  const labelStyle = {
+    fontSize: '0.75rem',
+    color: 'var(--c-text-secondary)',
+    marginBottom: '3px',
+    display: 'block',
+  } as const;
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 h-full">
@@ -83,6 +97,25 @@ export default function StudentForm({ onEntryAdded }: Props) {
           ))}
         </select>
       </div>
+
+      {/* Duplicate warning — shown when selected student already has entries */}
+      {hasWarning && (
+        <div style={{
+          background: 'rgba(245,158,11,0.12)',
+          border: '1px solid rgba(245,158,11,0.4)',
+          borderRadius: '6px',
+          padding: '8px 10px',
+        }}>
+          <p style={{ fontWeight: 700, color: 'var(--c-accent)', fontSize: '0.8rem', marginBottom: '4px' }}>
+            ⚠️ Bereits eingetragen:
+          </p>
+          {existingAssignments.map(a => (
+            <p key={a.entry.id} style={{ fontSize: '0.75rem', color: 'var(--c-text-secondary)' }}>
+              • {a.entry.subject} — Raum {a.entry.room}, Tisch {a.desk}
+            </p>
+          ))}
+        </div>
+      )}
 
       <div>
         <label style={labelStyle}>Fach</label>
@@ -116,10 +149,17 @@ export default function StudentForm({ onEntryAdded }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="mt-auto py-2 px-4 rounded-lg font-semibold text-sm text-white transition-opacity disabled:opacity-50"
-        style={{ background: 'var(--c-accent)' }}
+        className="mt-auto py-2 px-4 rounded-lg font-semibold text-sm transition-opacity disabled:opacity-50"
+        style={hasWarning
+          ? { background: 'transparent', border: '1.5px solid var(--c-accent)', color: 'var(--c-accent)' }
+          : { background: 'var(--c-accent)', color: 'white' }
+        }
       >
-        {loading ? 'Wird eingetragen…' : '+ Schüler eintragen'}
+        {loading
+          ? 'Wird eingetragen…'
+          : hasWarning
+            ? '⚠️ Trotzdem eintragen'
+            : '+ Schüler eintragen'}
       </button>
     </form>
   );
