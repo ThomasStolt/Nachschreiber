@@ -3,9 +3,11 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import type { Student, EntryCreate } from '../types';
 
+import type { SeatingPlan } from '../types';
+
 interface Props {
   onEntryAdded: () => void;
-  plan?: import('../types').SeatingPlan;
+  plan?: SeatingPlan; // TODO: Task 3 replaces this file — plan will be required and used for duplicate warning
 }
 
 export default function StudentForm({ onEntryAdded }: Props) {
