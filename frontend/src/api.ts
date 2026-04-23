@@ -20,9 +20,31 @@ export const api = {
     }
     return r.json();
   },
+  uploadTeachers: async (file: File): Promise<{ teachers: number }> => {
+    const form = new FormData();
+    form.append('file', file);
+    const r = await fetch('/api/upload/teachers', { method: 'POST', body: form });
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      throw new Error(body.detail ?? `HTTP ${r.status}`);
+    }
+    return r.json();
+  },
+  uploadSubjects: async (file: File): Promise<{ subjects: number }> => {
+    const form = new FormData();
+    form.append('file', file);
+    const r = await fetch('/api/upload/subjects', { method: 'POST', body: form });
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      throw new Error(body.detail ?? `HTTP ${r.status}`);
+    }
+    return r.json();
+  },
   getClasses: () => request<string[]>('/api/classes'),
   getStudents: (className?: string) =>
     request<Student[]>(className ? `/api/students?class_name=${encodeURIComponent(className)}` : '/api/students'),
+  getTeachers: () => request<string[]>('/api/teachers'),
+  getSubjects: () => request<string[]>('/api/subjects'),
   getEntries: () => request<Entry[]>('/api/entries'),
   createEntry: (body: EntryCreate) =>
     request<Entry>('/api/entries', { method: 'POST', body: JSON.stringify(body) }),
