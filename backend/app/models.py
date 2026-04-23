@@ -62,3 +62,5 @@ class SeatingPlan(BaseModel):
 class SessionData(BaseModel):
     students: list[Student] = []
     entries: list[Entry] = []
+    teachers: list[str] = []
+    subjects: list[str] = []
