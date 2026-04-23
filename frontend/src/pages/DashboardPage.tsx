@@ -17,6 +17,22 @@ const ROOM_LETTER: Record<'room_a' | 'room_b' | 'room_c', 'A' | 'B' | 'C'> = {
   room_a: 'A', room_b: 'B', room_c: 'C',
 };
 
+const ROOM_KEY: Record<'A' | 'B' | 'C', 'room_a' | 'room_b' | 'room_c'> = {
+  A: 'room_a', B: 'room_b', C: 'room_c',
+};
+
+function findNextFreeSeat(plan: SeatingPlan, room: 'A' | 'B' | 'C'): { desk: number; seat: number } | null {
+  const occupied = new Set(
+    plan[ROOM_KEY[room]].assignments.map(a => `${a.desk}-${a.seat}`)
+  );
+  for (let i = 0; i < 32; i++) {
+    const desk = Math.floor(i / 2) + 1;
+    const seat = (i % 2) + 1;
+    if (!occupied.has(`${desk}-${seat}`)) return { desk, seat };
+  }
+  return null;
+}
+
 const PRINT_ROOM_KEYS = ['room_a', 'room_b', 'room_c'] as const;
 
 export default function DashboardPage() {
@@ -91,6 +107,33 @@ export default function DashboardPage() {
     await refresh();
   }
 
+  // Drop on room tab: move to next free seat in that room
+  async function handleMoveToRoom(sourceEntryId: string, targetRoom: 'A' | 'B' | 'C') {
+    const allAssignments = [
+      ...plan.room_a.assignments,
+      ...plan.room_b.assignments,
+      ...plan.room_c.assignments,
+    ];
+    const source = allAssignments.find(a => a.entry.id === sourceEntryId);
+    // Skip if already in target room and not coming from clipboard
+    const fromClipboard = clipboardEntries.some(e => e.entry.id === sourceEntryId);
+    if (source && source.entry.room === targetRoom && !fromClipboard) return;
+
+    const free = findNextFreeSeat(plan, targetRoom);
+    if (!free) {
+      alert(`${plan[ROOM_KEY[targetRoom]].name} ist voll (32/32 Plätze belegt).`);
+      return;
+    }
+    try {
+      await api.moveEntry(sourceEntryId, { desk: free.desk, seat: free.seat, room: targetRoom });
+      setClipboardEntries(prev => prev.filter(e => e.entry.id !== sourceEntryId));
+      setActiveRoom(ROOM_KEY[targetRoom]);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Fehler beim Verschieben');
+    }
+    await refresh();
+  }
+
   const today = new Date().toLocaleDateString('de-DE');
 
   return (
@@ -129,6 +172,7 @@ export default function DashboardPage() {
             onScissors={handleScissors}
             onRemoveFromClipboard={handleRemoveFromClipboard}
             onDrop={handleDrop}
+            onMoveToRoom={handleMoveToRoom}
           />
         </div>
       </div>

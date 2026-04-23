@@ -14,6 +14,7 @@ interface Props {
   onScissors: (assignment: SeatAssignment) => void;
   onRemoveFromClipboard: (entryId: string) => void;
   onDrop: (sourceEntryId: string, targetDesk: number, targetSeat: number) => void;
+  onMoveToRoom: (sourceEntryId: string, targetRoom: 'A' | 'B' | 'C') => void;
 }
 
 // ── Seat Slot ─────────────────────────────────────────────────────────────
@@ -314,12 +315,52 @@ function ClipboardStrip({
   );
 }
 
+// ── Room Tab (droppable) ──────────────────────────────────────────────────
+function RoomTab({
+  roomKey, roomLetter, name, count, isActive, onClick,
+}: {
+  roomKey: 'room_a' | 'room_b' | 'room_c';
+  roomLetter: 'A' | 'B' | 'C';
+  name: string;
+  count: number;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: `room-${roomLetter}` });
+  return (
+    <button
+      ref={setNodeRef}
+      onClick={onClick}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+      style={{
+        background: isActive ? 'var(--c-accent)' : 'var(--c-surface)',
+        color: isActive ? 'white' : 'var(--c-text-secondary)',
+        border: isOver
+          ? '2px dashed var(--c-accent)'
+          : isActive ? 'none' : '1px solid var(--c-border)',
+        boxShadow: isOver ? '0 0 0 2px rgba(245,158,11,0.3)' : undefined,
+        outline: isActive && isOver ? '2px dashed white' : undefined,
+        outlineOffset: isActive && isOver ? '-5px' : undefined,
+      }}
+      data-room-key={roomKey}
+    >
+      {name}
+      <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--c-bg)' }}>
+        {count}/32
+      </span>
+    </button>
+  );
+}
+
 // ── SeatingGrid (main export) ─────────────────────────────────────────────
 const ROOM_KEYS = ['room_a', 'room_b', 'room_c'] as const;
+const ROOM_LETTER_BY_KEY: Record<'room_a' | 'room_b' | 'room_c', 'A' | 'B' | 'C'> = {
+  room_a: 'A', room_b: 'B', room_c: 'C',
+};
 
 export default function SeatingGrid({
   plan, activeRoom, onActiveRoomChange,
-  clipboardEntries, onScissors, onRemoveFromClipboard, onDrop,
+  clipboardEntries, onScissors, onRemoveFromClipboard, onDrop, onMoveToRoom,
   onDeleteStudent,
 }: Props) {
   const active = plan[activeRoom];
@@ -340,16 +381,23 @@ export default function SeatingGrid({
     if (!over) return;
     const activeId = active.id as string;
     const overId = over.id as string;
-    const parts = overId.split('-');
-    const desk = Number(parts[0]);
-    const seat = Number(parts[1]);
-    if (isNaN(desk) || isNaN(seat)) return;
 
     let entryId: string | null = null;
     if (activeId.startsWith('entry-')) entryId = activeId.substring('entry-'.length);
     else if (activeId.startsWith('clip-')) entryId = activeId.substring('clip-'.length);
+    if (!entryId) return;
 
-    if (entryId) onDrop(entryId, desk, seat);
+    if (overId.startsWith('room-')) {
+      const letter = overId.substring('room-'.length) as 'A' | 'B' | 'C';
+      onMoveToRoom(entryId, letter);
+      return;
+    }
+
+    const parts = overId.split('-');
+    const desk = Number(parts[0]);
+    const seat = Number(parts[1]);
+    if (isNaN(desk) || isNaN(seat)) return;
+    onDrop(entryId, desk, seat);
   }
 
   return (
@@ -362,23 +410,16 @@ export default function SeatingGrid({
         <div className="flex gap-2 p-4 pb-2 no-print">
           {ROOM_KEYS.map((key) => {
             const count = plan[key].assignments.filter(a => !clipboardEntryIds.has(a.entry.id)).length;
-            const isActive = activeRoom === key;
             return (
-              <button
+              <RoomTab
                 key={key}
+                roomKey={key}
+                roomLetter={ROOM_LETTER_BY_KEY[key]}
+                name={plan[key].name}
+                count={count}
+                isActive={activeRoom === key}
                 onClick={() => onActiveRoomChange(key)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                style={{
-                  background: isActive ? 'var(--c-accent)' : 'var(--c-surface)',
-                  color: isActive ? 'white' : 'var(--c-text-secondary)',
-                  border: isActive ? 'none' : '1px solid var(--c-border)',
-                }}
-              >
-                {plan[key].name}
-                <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--c-bg)' }}>
-                  {count}/32
-                </span>
-              </button>
+              />
             );
           })}
         </div>
