@@ -16,3 +16,13 @@ def reset() -> dict:
     session.entries = []
     save(session)
     return {"entries": 0}
+
+
+@router.get("/teachers")
+def get_teachers() -> list[str]:
+    return load().teachers
+
+
+@router.get("/subjects")
+def get_subjects() -> list[str]:
+    return load().subjects
