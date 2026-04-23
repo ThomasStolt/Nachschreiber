@@ -1,7 +1,7 @@
 // frontend/src/components/ExportButtons.tsx
 import { api } from '../api';
 
-export default function ExportButtons() {
+export default function ExportButtons(_props: { activeRoom?: 'room_a' | 'room_b' | 'room_c' }) {
   function download(format: 'excel' | 'word') {
     window.open(api.exportUrl(format), '_blank');
   }

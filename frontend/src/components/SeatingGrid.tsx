@@ -1,9 +1,10 @@
 // frontend/src/components/SeatingGrid.tsx
-import { useState } from 'react';
 import type { SeatingPlan, RoomPlan, SeatAssignment } from '../types';
 
 interface Props {
   plan: SeatingPlan;
+  activeRoom: 'room_a' | 'room_b' | 'room_c';
+  onActiveRoomChange: (room: 'room_a' | 'room_b' | 'room_c') => void;
   onDeleteEntry: (entryId: string) => void;
 }
 
@@ -49,12 +50,11 @@ function DeskCard({ desk, assignments }: { desk: number; assignments: (SeatAssig
   );
 }
 
-function RoomGrid({ room_plan }: { room_plan: RoomPlan }) {
+export function RoomGrid({ room_plan }: { room_plan: RoomPlan }) {
   const assignmentMap = new Map<string, SeatAssignment>();
   for (const a of room_plan.assignments) {
     assignmentMap.set(`${a.desk}-${a.seat}`, a);
   }
-
   const desks = Array.from({ length: 16 }, (_, i) => {
     const desk = i + 1;
     return {
@@ -65,7 +65,6 @@ function RoomGrid({ room_plan }: { room_plan: RoomPlan }) {
       ],
     };
   });
-
   return (
     <div className="grid grid-cols-4 gap-2">
       {desks.map(({ desk, seats }) => (
@@ -75,27 +74,24 @@ function RoomGrid({ room_plan }: { room_plan: RoomPlan }) {
   );
 }
 
-export default function SeatingGrid({ plan, onDeleteEntry: _onDeleteEntry }: Props) {
-  const [activeRoom, setActiveRoom] = useState<'room_a' | 'room_b' | 'room_c'>('room_a');
+const ROOMS = [
+  { key: 'room_a' as const, label: 'Raum A' },
+  { key: 'room_b' as const, label: 'Raum B' },
+  { key: 'room_c' as const, label: 'Raum C' },
+];
 
-  const rooms: { key: 'room_a' | 'room_b' | 'room_c'; label: string }[] = [
-    { key: 'room_a', label: 'Raum A' },
-    { key: 'room_b', label: 'Raum B' },
-    { key: 'room_c', label: 'Raum C' },
-  ];
-
+export default function SeatingGrid({ plan, activeRoom, onActiveRoomChange, onDeleteEntry: _onDeleteEntry }: Props) {
   const active = plan[activeRoom];
-
   return (
     <div className="flex flex-col h-full gap-3">
-      <div className="flex gap-2">
-        {rooms.map(({ key, label }) => {
+      <div className="flex gap-2 no-print">
+        {ROOMS.map(({ key, label }) => {
           const count = plan[key].assignments.length;
           const isActive = activeRoom === key;
           return (
             <button
               key={key}
-              onClick={() => setActiveRoom(key)}
+              onClick={() => onActiveRoomChange(key)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
               style={{
                 background: isActive ? 'var(--c-accent)' : 'var(--c-surface)',
@@ -104,21 +100,16 @@ export default function SeatingGrid({ plan, onDeleteEntry: _onDeleteEntry }: Pro
               }}
             >
               {label}
-              <span
-                className="text-xs px-1.5 py-0.5 rounded-full"
-                style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--c-bg)' }}
-              >
+              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--c-bg)' }}>
                 {count}/32
               </span>
             </button>
           );
         })}
       </div>
-
-      <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>
+      <p className="text-xs no-print" style={{ color: 'var(--c-text-secondary)' }}>
         {active.label} · {active.assignments.length} Schüler
       </p>
-
       <div className="overflow-y-auto flex-1">
         <RoomGrid room_plan={active} />
       </div>

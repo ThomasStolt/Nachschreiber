@@ -15,7 +15,7 @@ function Header() {
   }
 
   return (
-    <header className="border-b px-6 py-3 flex items-center justify-between" style={{ borderColor: 'var(--c-border)', background: 'var(--c-surface)' }}>
+    <header className="border-b px-6 py-3 flex items-center justify-between no-print" style={{ borderColor: 'var(--c-border)', background: 'var(--c-surface)' }}>
       <button onClick={() => navigate('/')} className="text-lg font-bold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", color: 'var(--c-text)' }}>
         Nachschreiber
       </button>

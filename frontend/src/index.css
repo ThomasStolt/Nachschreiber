@@ -39,3 +39,37 @@
     font-family: 'Bricolage Grotesque', sans-serif;
   }
 }
+
+@media print {
+  /* Force light mode regardless of dark/light setting */
+  :root,
+  .dark {
+    --c-bg: #ffffff;
+    --c-surface: #ffffff;
+    --c-border: #e5e0d8;
+    --c-text: #1c1917;
+    --c-text-secondary: #78716c;
+    --c-accent: #d97706;
+    --c-muted: #a8a29e;
+  }
+
+  /* General print utilities */
+  .no-print { display: none !important; }
+  .overflow-y-auto { overflow: visible !important; }
+
+  /* Print heading for single-room mode — hidden on screen */
+  .print-single-heading { display: block !important; }
+
+  /* Print-all section — hidden on screen */
+  .print-all-rooms { display: none; }
+
+  /* In all-rooms print mode: show all-rooms section, hide single-room view */
+  body[data-print-mode="all"] .print-all-rooms { display: block; }
+  body[data-print-mode="all"] .print-active-room { display: none !important; }
+
+  /* Each room on its own page */
+  .print-room-section { page-break-after: always; }
+  .print-room-section:last-child { page-break-after: avoid; }
+
+  @page { margin: 1.5cm; }
+}

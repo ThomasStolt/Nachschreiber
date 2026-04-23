@@ -5,6 +5,7 @@ import type { Student, EntryCreate } from '../types';
 
 interface Props {
   onEntryAdded: () => void;
+  plan?: import('../types').SeatingPlan;
 }
 
 export default function StudentForm({ onEntryAdded }: Props) {
