@@ -77,6 +77,17 @@
     box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
   }
 
+  /* Strip native number spinners */
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   /* Thin, subtle scrollbars everywhere (webkit) */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }

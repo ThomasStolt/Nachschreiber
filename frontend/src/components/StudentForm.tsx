@@ -138,7 +138,47 @@ export default function StudentForm({ onEntryAdded, plan }: Props) {
 
       <div>
         <label style={labelStyle}>Dauer (Minuten)</label>
-        <input style={inputStyle} type="number" min={1} max={300} value={form.duration_minutes} onChange={e => set('duration_minutes', Number(e.target.value))} required />
+        <div className="flex gap-1.5">
+          <button
+            type="button"
+            onClick={() => set('duration_minutes', Math.max(1, form.duration_minutes - 5))}
+            aria-label="minus 5 Minuten"
+            className="shrink-0 rounded-md text-sm font-medium transition-colors"
+            style={{
+              background: 'var(--c-bg)',
+              border: '1px solid var(--c-border)',
+              color: 'var(--c-text)',
+              width: '32px',
+              cursor: 'pointer',
+            }}
+          >
+            −
+          </button>
+          <input
+            style={{ ...inputStyle, textAlign: 'center', flex: 1 }}
+            type="number"
+            min={1}
+            max={300}
+            value={form.duration_minutes}
+            onChange={e => set('duration_minutes', Number(e.target.value))}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => set('duration_minutes', Math.min(300, form.duration_minutes + 5))}
+            aria-label="plus 5 Minuten"
+            className="shrink-0 rounded-md text-sm font-medium transition-colors"
+            style={{
+              background: 'var(--c-bg)',
+              border: '1px solid var(--c-border)',
+              color: 'var(--c-text)',
+              width: '32px',
+              cursor: 'pointer',
+            }}
+          >
+            +
+          </button>
+        </div>
         <p className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>
           ≤45 → Raum A · 46–59 → Raum B · ≥60 → Raum C
         </p>
