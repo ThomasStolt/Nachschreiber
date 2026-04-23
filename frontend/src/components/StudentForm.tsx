@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import type { Student, EntryCreate, SeatingPlan } from '../types';
+import Combobox from './Combobox';
 
 interface Props {
   onEntryAdded: () => void;
@@ -125,17 +126,14 @@ export default function StudentForm({ onEntryAdded, plan }: Props) {
 
       <div>
         <label style={labelStyle}>Fach</label>
-        <input
+        <Combobox
           style={inputStyle}
-          list="subject-options"
           value={form.subject}
-          onChange={e => set('subject', e.target.value)}
+          onChange={v => set('subject', v)}
+          options={subjects}
           placeholder="z.B. Mathematik"
           required
         />
-        <datalist id="subject-options">
-          {subjects.map(s => <option key={s} value={s} />)}
-        </datalist>
       </div>
 
       <div>
@@ -153,17 +151,14 @@ export default function StudentForm({ onEntryAdded, plan }: Props) {
 
       <div>
         <label style={labelStyle}>Verantw. Lehrkraft</label>
-        <input
+        <Combobox
           style={inputStyle}
-          list="teacher-options"
           value={form.teacher}
-          onChange={e => set('teacher', e.target.value)}
+          onChange={v => set('teacher', v)}
+          options={teachers}
           placeholder="z.B. Fr. Schmidt"
           required
         />
-        <datalist id="teacher-options">
-          {teachers.map(t => <option key={t} value={t} />)}
-        </datalist>
       </div>
 
       {error && (
