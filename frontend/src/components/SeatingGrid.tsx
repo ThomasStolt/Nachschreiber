@@ -6,6 +6,11 @@ interface Props {
   activeRoom: 'room_a' | 'room_b' | 'room_c';
   onActiveRoomChange: (room: 'room_a' | 'room_b' | 'room_c') => void;
   onDeleteEntry: (entryId: string) => void;
+  clipboardEntry?: SeatAssignment | null;
+  onScissors?: (assignment: SeatAssignment) => void;
+  onCancelClipboard?: () => void;
+  onPaste?: (desk: number, seat: number) => void;
+  onDrop?: (sourceEntryId: string, targetDesk: number, targetSeat: number) => void;
 }
 
 function DeskCard({ desk, assignments }: { desk: number; assignments: (SeatAssignment | null)[] }) {

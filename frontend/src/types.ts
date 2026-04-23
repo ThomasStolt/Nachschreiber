@@ -13,6 +13,8 @@ export interface Entry {
   aids: string;
   teacher: string;
   room: 'A' | 'B' | 'C';
+  desk: number;
+  seat: number;
 }
 
 export interface EntryCreate {

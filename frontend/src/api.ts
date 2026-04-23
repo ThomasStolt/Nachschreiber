@@ -20,7 +20,6 @@ export const api = {
     }
     return r.json();
   },
-
   getClasses: () => request<string[]>('/api/classes'),
   getStudents: (className?: string) =>
     request<Student[]>(className ? `/api/students?class_name=${encodeURIComponent(className)}` : '/api/students'),
@@ -31,6 +30,8 @@ export const api = {
     const r = await fetch(`/api/entries/${id}`, { method: 'DELETE' });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
   },
+  moveEntry: (id: string, body: { desk: number; seat: number; room: 'A' | 'B' | 'C' }) =>
+    request<Entry[]>(`/api/entries/${id}/seat`, { method: 'PATCH', body: JSON.stringify(body) }),
   getSeating: () => request<SeatingPlan>('/api/seating'),
   reset: () => request<{ entries: number }>('/api/reset', { method: 'POST' }),
   exportUrl: (format: 'excel' | 'word') => `/api/export/${format}`,
