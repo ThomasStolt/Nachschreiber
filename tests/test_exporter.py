@@ -17,6 +17,8 @@ def _make_session() -> SessionData:
         aids="Taschenrechner",
         teacher="Fr. Schmidt",
         room="A",
+        desk=1,
+        seat=1,
     )
     return SessionData(students=[student], entries=[entry])
 

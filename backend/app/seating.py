@@ -12,6 +12,16 @@ def assign_room(duration_minutes: int) -> Literal["A", "B", "C"]:
         return "C"
 
 
+def next_free_seat(entries: list[Entry], room: str) -> tuple[int, int]:
+    """Return the next available (desk, seat) in the given room."""
+    occupied = {(e.desk, e.seat) for e in entries if e.room == room}
+    for i in range(32):
+        d, s = (i // 2) + 1, (i % 2) + 1
+        if (d, s) not in occupied:
+            return d, s
+    raise ValueError(f"Raum {room} ist voll (32/32 Plätze belegt)")
+
+
 def _build_room_plan(
     room: Literal["A", "B", "C"],
     label: str,
