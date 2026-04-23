@@ -311,3 +311,44 @@ def test_put_subjects_does_not_reset_students_or_entries(client):
     client.put("/api/subjects", json=["Mathe"])
     assert len(client.get("/api/students").json()) == 2
     assert len(client.get("/api/entries").json()) == 1
+
+
+# --- Delete student ---
+
+def test_delete_student_removes_student(client):
+    sid = _upload(client)
+    r = client.delete(f"/api/students/{sid}")
+    assert r.status_code == 204
+    students = client.get("/api/students").json()
+    assert all(s["id"] != sid for s in students)
+
+
+def test_delete_student_cascades_entries(client):
+    sid = _upload(client)
+    client.post("/api/entries", json={"student_id": sid, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    client.post("/api/entries", json={"student_id": sid, "subject": "Deutsch", "duration_minutes": 30, "teacher": "T"})
+    assert len(client.get("/api/entries").json()) == 2
+    r = client.delete(f"/api/students/{sid}")
+    assert r.status_code == 204
+    assert len(client.get("/api/entries").json()) == 0
+
+
+def test_delete_student_keeps_other_students_and_entries(client):
+    _upload(client)
+    students = client.get("/api/students").json()
+    sid1, sid2 = students[0]["id"], students[1]["id"]
+    client.post("/api/entries", json={"student_id": sid1, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    client.post("/api/entries", json={"student_id": sid2, "subject": "Deutsch", "duration_minutes": 30, "teacher": "T"})
+    client.delete(f"/api/students/{sid1}")
+    remaining_students = client.get("/api/students").json()
+    remaining_entries = client.get("/api/entries").json()
+    assert len(remaining_students) == 1
+    assert remaining_students[0]["id"] == sid2
+    assert len(remaining_entries) == 1
+    assert remaining_entries[0]["student_id"] == sid2
+
+
+def test_delete_student_unknown_id_404(client):
+    _upload(client)
+    r = client.delete("/api/students/does-not-exist")
+    assert r.status_code == 404

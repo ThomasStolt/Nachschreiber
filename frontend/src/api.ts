@@ -43,6 +43,13 @@ export const api = {
   getClasses: () => request<string[]>('/api/classes'),
   getStudents: (className?: string) =>
     request<Student[]>(className ? `/api/students?class_name=${encodeURIComponent(className)}` : '/api/students'),
+  deleteStudent: async (id: string): Promise<void> => {
+    const r = await fetch(`/api/students/${id}`, { method: 'DELETE' });
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      throw new Error(body.detail ?? `HTTP ${r.status}`);
+    }
+  },
   getTeachers: () => request<string[]>('/api/teachers'),
   getSubjects: () => request<string[]>('/api/subjects'),
   putTeachers: (teachers: string[]) =>
