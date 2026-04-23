@@ -93,13 +93,17 @@ function SeatSlot({ desk, seat, assignment, clipboardEntry, activeRoomLetter, on
               {assignment.student.class_name} · {assignment.entry.subject} · {assignment.entry.duration_minutes} min
             </p>
             <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onScissors(assignment); }}
-              style={{
-                position: 'absolute', top: '2px', right: '2px',
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: '0.7rem', opacity: 0.5, padding: '1px', lineHeight: 1,
-              }}
+              aria-label="Ausschneiden"
               title="Ausschneiden"
+              style={{
+                position: 'absolute', top: '0', right: '0',
+                background: 'var(--c-surface)', border: '1px solid var(--c-border)',
+                borderRadius: '4px', cursor: 'pointer',
+                fontSize: '0.8rem', padding: '1px 4px', lineHeight: 1,
+              }}
             >
               ✂️
             </button>
