@@ -17,8 +17,14 @@ export default function StudentForm({ onEntryAdded, plan }: Props) {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [teachers, setTeachers] = useState<string[]>([]);
+  const [subjects, setSubjects] = useState<string[]>([]);
 
-  useEffect(() => { api.getClasses().then(setClasses); }, []);
+  useEffect(() => {
+    api.getClasses().then(setClasses);
+    api.getTeachers().then(setTeachers);
+    api.getSubjects().then(setSubjects);
+  }, []);
 
   useEffect(() => {
     if (selectedClass) {
@@ -119,7 +125,17 @@ export default function StudentForm({ onEntryAdded, plan }: Props) {
 
       <div>
         <label style={labelStyle}>Fach</label>
-        <input style={inputStyle} value={form.subject} onChange={e => set('subject', e.target.value)} placeholder="z.B. Mathematik" required />
+        <input
+          style={inputStyle}
+          list="subject-options"
+          value={form.subject}
+          onChange={e => set('subject', e.target.value)}
+          placeholder="z.B. Mathematik"
+          required
+        />
+        <datalist id="subject-options">
+          {subjects.map(s => <option key={s} value={s} />)}
+        </datalist>
       </div>
 
       <div>
@@ -137,7 +153,17 @@ export default function StudentForm({ onEntryAdded, plan }: Props) {
 
       <div>
         <label style={labelStyle}>Verantw. Lehrkraft</label>
-        <input style={inputStyle} value={form.teacher} onChange={e => set('teacher', e.target.value)} placeholder="z.B. Fr. Schmidt" required />
+        <input
+          style={inputStyle}
+          list="teacher-options"
+          value={form.teacher}
+          onChange={e => set('teacher', e.target.value)}
+          placeholder="z.B. Fr. Schmidt"
+          required
+        />
+        <datalist id="teacher-options">
+          {teachers.map(t => <option key={t} value={t} />)}
+        </datalist>
       </div>
 
       {error && (
