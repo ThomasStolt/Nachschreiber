@@ -8,7 +8,7 @@ interface Props {
   plan: SeatingPlan;
   activeRoom: 'room_a' | 'room_b' | 'room_c';
   onActiveRoomChange: (room: 'room_a' | 'room_b' | 'room_c') => void;
-  onDeleteEntry: (entryId: string) => void;
+  onDeleteEntry?: (entryId: string) => void;
   clipboardEntry: SeatAssignment | null;
   onScissors: (assignment: SeatAssignment) => void;
   onCancelClipboard: () => void;
@@ -46,12 +46,12 @@ function SeatSlot({ desk, seat, assignment, clipboardEntry, activeRoomLetter, on
 
   const dragStyle = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
 
-  // Paste target: empty slot always; occupied slot only in same room (for swap)
-  const isPasteTarget = clipboardEntry !== null && (
-    !assignment || activeRoomLetter === clipboardEntry.entry.room
-  );
-
   const isClipboardSource = clipboardEntry?.entry.id === assignment?.entry.id;
+
+  // Paste target: empty slot always; occupied slot only in same room (for swap); never the source slot itself
+  const isPasteTarget = clipboardEntry !== null
+    && !isClipboardSource
+    && (!assignment || activeRoomLetter === clipboardEntry.entry.room);
 
   const slotStyle: React.CSSProperties = {
     flex: 1,
