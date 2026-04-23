@@ -3,6 +3,8 @@ import io
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.cell.rich_text import CellRichText, TextBlock
+from openpyxl.cell.text import InlineFont
 from docx import Document
 from .models import SeatingPlan, RoomPlan, SeatAssignment
 
@@ -41,22 +43,28 @@ def _style_pult_row(ws) -> None:
     ws.row_dimensions[_PULT_ROW].height = 18
 
 
-def _seat_cell_content(assignment: SeatAssignment | None, desk: int, seat: int) -> str:
+def _seat_cell_value(assignment: SeatAssignment | None, desk: int, seat: int) -> CellRichText | str:
     label = f"T{desk}.S{seat}"
     if assignment is None:
         return label
     st = assignment.student
     en = assignment.entry
-    lines = [
-        label,
-        f"{st.last_name}, {st.first_name}",
-        st.class_name,
-        f"{en.subject} · {en.duration_minutes} min",
-        en.teacher,
+    font_label = InlineFont(sz=8, color="888888")
+    font_name = InlineFont(sz=11, b=True)
+    font_body = InlineFont(sz=9)
+    font_aids = InlineFont(sz=9, i=True)
+    has_aids = bool(en.aids.strip())
+    teacher_text = f"{en.teacher}\n" if has_aids else en.teacher
+    runs: list = [
+        TextBlock(font_label, f"{label}\n"),
+        TextBlock(font_name, f"{st.last_name}, {st.first_name}\n"),
+        TextBlock(font_body, f"{st.class_name}\n"),
+        TextBlock(font_body, f"{en.subject} · {en.duration_minutes} min\n"),
+        TextBlock(font_body, teacher_text),
     ]
-    if en.aids.strip():
-        lines.append(en.aids.strip())
-    return "\n".join(lines)
+    if has_aids:
+        runs.append(TextBlock(font_aids, en.aids.strip()))
+    return CellRichText(*runs)
 
 
 def _style_seat_cell(cell, filled: bool, desk_col_index: int) -> None:
@@ -73,7 +81,8 @@ def _style_seat_cell(cell, filled: bool, desk_col_index: int) -> None:
     bottom = _THICK
     cell.border = Border(left=left, right=right, top=top, bottom=bottom)
     cell.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center")
-    cell.font = Font(size=10) if filled else Font(size=9, color="AAAAAA")
+    if not filled:
+        cell.font = Font(size=9, color="AAAAAA")
 
 
 def _render_room_grid(ws, room_plan: RoomPlan, title: str) -> None:
@@ -94,7 +103,7 @@ def _render_room_grid(ws, room_plan: RoomPlan, title: str) -> None:
                 excel_col = desk_col * 2 + seat_in_desk + 1
                 cell = ws.cell(excel_row, excel_col)
                 assignment = assignment_map.get((desk_number, seat_number))
-                cell.value = _seat_cell_content(assignment, desk_number, seat_number)
+                cell.value = _seat_cell_value(assignment, desk_number, seat_number)
                 _style_seat_cell(cell, filled=assignment is not None, desk_col_index=desk_col)
 
     # Uniform column widths for all 8 seat columns

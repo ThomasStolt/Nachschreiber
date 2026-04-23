@@ -49,7 +49,7 @@ def test_excel_grid_seat_1_1_holds_first_entry():
     buf = build_excel(plan)
     wb = openpyxl.load_workbook(io.BytesIO(buf))
     ws = wb["Raum A"]
-    text = ws.cell(4, 1).value or ""
+    text = str(ws.cell(4, 1).value or "")
     assert "Müller, Anna" in text
     assert "10a" in text
     assert "Mathematik" in text
@@ -66,7 +66,7 @@ def test_excel_grid_empty_seat_shows_only_label():
     wb = openpyxl.load_workbook(io.BytesIO(buf))
     ws = wb["Raum A"]
     # Desk 1, Seat 2 → row 4, col 2 (seats within a desk are adjacent columns)
-    text = (ws.cell(4, 2).value or "").strip()
+    text = str(ws.cell(4, 2).value or "").strip()
     assert text == "T1.S2"
 
 
@@ -77,7 +77,7 @@ def test_excel_grid_second_desk_first_seat_is_empty_with_label():
     wb = openpyxl.load_workbook(io.BytesIO(buf))
     ws = wb["Raum A"]
     # Desk 2, Seat 1 → row 4, col 3
-    text = (ws.cell(4, 3).value or "").strip()
+    text = str(ws.cell(4, 3).value or "").strip()
     assert text == "T2.S1"
 
 
@@ -88,10 +88,10 @@ def test_excel_grid_last_row_corresponds_to_desks_13_to_16():
     wb = openpyxl.load_workbook(io.BytesIO(buf))
     ws = wb["Raum A"]
     # Desk 13 Seat 1 → row 7, col 1
-    text = (ws.cell(7, 1).value or "").strip()
+    text = str(ws.cell(7, 1).value or "").strip()
     assert text == "T13.S1"
     # Desk 16 Seat 2 → row 7, col 8
-    text_last = (ws.cell(7, 8).value or "").strip()
+    text_last = str(ws.cell(7, 8).value or "").strip()
     assert text_last == "T16.S2"
 
 
