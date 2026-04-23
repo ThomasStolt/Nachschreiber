@@ -113,7 +113,7 @@ function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors, onDel
                 title="Schüler aus Stammdaten löschen"
                 style={{
                   position: 'absolute', top: '0', right: '24px',
-                  background: 'var(--c-surface)', border: '1px solid rgba(220,38,38,0.35)',
+                  background: 'var(--c-surface)', border: '1px solid var(--c-border)',
                   borderRadius: '4px', cursor: 'pointer',
                   fontSize: '0.8rem', padding: '1px 4px', lineHeight: 1,
                 }}
