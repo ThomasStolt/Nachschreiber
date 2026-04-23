@@ -108,3 +108,75 @@ def test_reset(client):
     assert r.status_code == 200
     assert client.get("/api/entries").json() == []
     assert len(client.get("/api/students").json()) == 2
+
+
+# --- Seat move tests ---
+
+def test_create_entry_stores_desk_seat(client):
+    sid = _upload(client)
+    r = client.post("/api/entries", json={"student_id": sid, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    assert r.status_code == 201
+    data = r.json()
+    assert data["desk"] == 1
+    assert data["seat"] == 1
+
+
+def test_second_entry_gets_next_seat(client):
+    sid = _upload(client)
+    students = client.get("/api/students").json()
+    sid2 = students[1]["id"]
+    client.post("/api/entries", json={"student_id": sid, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    r = client.post("/api/entries", json={"student_id": sid2, "subject": "Deutsch", "duration_minutes": 30, "teacher": "T"})
+    assert r.json()["desk"] == 1
+    assert r.json()["seat"] == 2
+
+
+def test_move_entry_to_free_seat(client):
+    sid = _upload(client)
+    r = client.post("/api/entries", json={"student_id": sid, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    eid = r.json()["id"]
+    r2 = client.patch(f"/api/entries/{eid}/seat", json={"desk": 5, "seat": 2, "room": "A"})
+    assert r2.status_code == 200
+    updated = r2.json()
+    assert len(updated) == 1
+    assert updated[0]["desk"] == 5
+    assert updated[0]["seat"] == 2
+    assert updated[0]["room"] == "A"
+
+
+def test_swap_entries_within_room(client):
+    sid = _upload(client)
+    students = client.get("/api/students").json()
+    sid2 = students[1]["id"]
+    r1 = client.post("/api/entries", json={"student_id": sid, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    r2 = client.post("/api/entries", json={"student_id": sid2, "subject": "Deutsch", "duration_minutes": 30, "teacher": "T"})
+    eid1, eid2 = r1.json()["id"], r2.json()["id"]
+    # Move entry1 to entry2's seat → swap
+    r = client.patch(f"/api/entries/{eid1}/seat", json={"desk": 1, "seat": 2, "room": "A"})
+    assert r.status_code == 200
+    updated = {e["id"]: e for e in r.json()}
+    assert updated[eid1]["desk"] == 1 and updated[eid1]["seat"] == 2
+    assert updated[eid2]["desk"] == 1 and updated[eid2]["seat"] == 1
+
+
+def test_cross_room_move_to_free_seat(client):
+    sid = _upload(client)
+    r = client.post("/api/entries", json={"student_id": sid, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    eid = r.json()["id"]
+    r2 = client.patch(f"/api/entries/{eid}/seat", json={"desk": 3, "seat": 1, "room": "C"})
+    assert r2.status_code == 200
+    assert r2.json()[0]["room"] == "C"
+    assert r2.json()[0]["desk"] == 3
+
+
+def test_cross_room_move_to_occupied_seat_rejected(client):
+    sid = _upload(client)
+    students = client.get("/api/students").json()
+    sid2 = students[1]["id"]
+    r1 = client.post("/api/entries", json={"student_id": sid, "subject": "Mathe", "duration_minutes": 45, "teacher": "T"})
+    # Put sid2 in Room C desk 1 seat 1
+    client.post("/api/entries", json={"student_id": sid2, "subject": "Bio", "duration_minutes": 90, "teacher": "T"})
+    eid1 = r1.json()["id"]
+    # Try to move room-A entry to room-C desk 1 seat 1 which is occupied
+    r = client.patch(f"/api/entries/{eid1}/seat", json={"desk": 1, "seat": 1, "room": "C"})
+    assert r.status_code == 409
