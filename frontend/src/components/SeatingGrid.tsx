@@ -87,6 +87,7 @@ function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors }: Sea
             </p>
             <button
               type="button"
+              className="no-print"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onScissors(assignment); }}
               aria-label="Ausschneiden"
