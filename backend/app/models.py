@@ -1,7 +1,7 @@
 # backend/app/models.py
 from __future__ import annotations
 from typing import Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Student(BaseModel):
@@ -12,6 +12,8 @@ class Student(BaseModel):
 
 
 class Entry(BaseModel):
+    model_config = ConfigDict(validate_assignment=True)
+
     id: str
     student_id: str
     subject: str
