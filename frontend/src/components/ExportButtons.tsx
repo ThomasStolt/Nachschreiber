@@ -18,7 +18,7 @@ export default function ExportButtons({ activeRoom }: Props) {
 
   function doPrint(mode: 'single' | 'all') {
     document.body.setAttribute('data-print-mode', mode);
-    window.onafterprint = () => document.body.removeAttribute('data-print-mode');
+    window.addEventListener('afterprint', () => document.body.removeAttribute('data-print-mode'), { once: true });
     window.print();
   }
 
