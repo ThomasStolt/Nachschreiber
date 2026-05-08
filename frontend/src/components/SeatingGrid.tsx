@@ -146,8 +146,13 @@ export function RoomGrid({
     assignmentMap.set(`${a.desk}-${a.seat}`, a);
   }
 
+  // Tisch 1 unten rechts, Tisch 16 oben links.
+  // Reading-Order durch das Grid (links→rechts, oben→unten) erzeugt die Reihenfolge:
+  // 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
   const desks = Array.from({ length: 16 }, (_, i) => {
-    const desk = i + 1;
+    const row = Math.floor(i / 4);
+    const col = i % 4;
+    const desk = (3 - row) * 4 + (3 - col) + 1;
     return {
       desk,
       slots: [
