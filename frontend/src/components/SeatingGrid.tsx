@@ -225,7 +225,11 @@ function RoomTab({
         border: isOver
           ? '2px dashed var(--c-accent)'
           : `1px solid var(--c-border)`,
-        borderBottom: isActive ? '1px solid var(--c-bg)' : '1px solid var(--c-border)',
+        borderBottom: isOver
+          ? undefined
+          : isActive
+            ? '1px solid var(--c-bg)'
+            : '1px solid var(--c-border)',
         borderTopLeftRadius: '8px',
         borderTopRightRadius: '8px',
         borderBottomLeftRadius: 0,
