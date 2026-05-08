@@ -218,17 +218,23 @@ function RoomTab({
     <button
       ref={setNodeRef}
       onClick={editing ? undefined : onClick}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors"
       style={{
-        background: isActive ? 'var(--c-accent)' : 'var(--c-surface)',
-        color: isActive ? 'white' : 'var(--c-text-secondary)',
+        background: isActive ? 'var(--c-bg)' : 'var(--c-surface)',
+        color: isActive ? 'var(--c-text)' : 'var(--c-text-secondary)',
         border: isOver
           ? '2px dashed var(--c-accent)'
-          : isActive ? 'none' : '1px solid var(--c-border)',
+          : `1px solid var(--c-border)`,
+        borderBottom: isActive ? '1px solid var(--c-bg)' : '1px solid var(--c-border)',
+        borderTopLeftRadius: '8px',
+        borderTopRightRadius: '8px',
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
         boxShadow: isOver ? '0 0 0 2px rgba(245,158,11,0.3)' : undefined,
-        outline: isActive && isOver ? '2px dashed white' : undefined,
-        outlineOffset: isActive && isOver ? '-5px' : undefined,
         cursor: editing ? 'text' : 'pointer',
+        marginBottom: 0,
+        position: 'relative',
+        fontWeight: isActive ? 600 : 500,
       }}
       data-room-key={roomKey}
     >
@@ -247,9 +253,9 @@ function RoomTab({
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
           style={{
-            background: 'rgba(255,255,255,0.85)',
+            background: 'var(--c-surface)',
             color: 'var(--c-text)',
-            border: 'none',
+            border: '1px solid var(--c-border)',
             borderRadius: '4px',
             padding: '0px 4px',
             fontSize: '0.875rem',
@@ -296,7 +302,10 @@ function RoomTab({
           )}
         </>
       )}
-      <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--c-bg)' }}>
+      <span className="text-xs px-1.5 py-0.5 rounded-full" style={{
+        background: isActive ? 'var(--c-surface)' : 'var(--c-bg)',
+        color: 'var(--c-text-secondary)',
+      }}>
         {count}/32
       </span>
     </button>
@@ -343,8 +352,16 @@ export default function SeatingGrid({
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="flex flex-col h-full">
-        <div className="flex gap-2 p-4 pb-2 no-print">
+      <div className="flex flex-col h-full p-4">
+        <div
+          className="flex gap-1 no-print"
+          style={{
+            paddingLeft: '0.5rem',
+            marginBottom: '-1px',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
           {ROOM_KEYS.map((key) => {
             const count = plan[key].assignments.length;
             return (
@@ -362,15 +379,25 @@ export default function SeatingGrid({
           })}
         </div>
 
-        <p className="px-4 text-xs pb-2 no-print" style={{ color: 'var(--c-text-secondary)' }}>
-          {active.label} · {active.assignments.length} Schüler
-        </p>
+        <div
+          className="flex-1 flex flex-col overflow-hidden"
+          style={{
+            background: 'var(--c-bg)',
+            border: '1px solid var(--c-border)',
+            borderRadius: '0 0 8px 8px',
+            padding: '0.75rem',
+          }}
+        >
+          <p className="text-xs pb-2 no-print" style={{ color: 'var(--c-text-secondary)' }}>
+            {active.label} · {active.assignments.length} Schüler
+          </p>
 
-        <div className="overflow-y-auto flex-1 px-4 pb-4">
-          <RoomGrid
-            room_plan={active}
-            onDeleteEntry={onDeleteEntry}
-          />
+          <div className="overflow-y-auto flex-1">
+            <RoomGrid
+              room_plan={active}
+              onDeleteEntry={onDeleteEntry}
+            />
+          </div>
         </div>
       </div>
     </DndContext>
