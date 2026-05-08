@@ -5,6 +5,26 @@ Alle relevanten Änderungen an Nachschreiber werden in dieser Datei dokumentiert
 Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.4.0] — 2026-05-08
+
+### Geändert
+- **Tisch-Nummerierung** — Tisch 1 unten rechts, Tisch 16 oben links (so wie es Kollegen kennen). Auto-Belegung folgt der neuen Nummerierung.
+- **Default-Raumnamen** — „Raum 1", „Raum 2", „Raum 3" statt „Raum A/B/C". Bestehende Sessions bleiben unverändert.
+- **🗑️-Button** entfernt nur den Sitzplan-Eintrag — die Stammdaten und andere Einträge des Schülers bleiben erhalten.
+
+### Hinzugefügt
+- **Inline Raum umbenennen** — ✏️-Icon auf dem aktiven Reiter; Klick öffnet Inline-Edit (Enter speichert, Escape bricht ab, leerer Name fällt auf Default zurück).
+- **Tab+Rahmen-Look** — der aktive Reiter verschmilzt visuell mit dem Raum-Panel; klare Orientierung, in welchem Raum man sich befindet.
+- **Dynamische Raumnamen** in Druck-Knöpfen und Formular-Hinweis — Umbenennungen werden überall sofort sichtbar.
+
+### Entfernt
+- **Schere („Ausschneiden")** — Multi-Entry-Zwischenablage mit Drag-aus-Strip. Wurde nicht mehr gebraucht; Drag & Drop direkt zwischen Tischen ist die einfachere Variante.
+
+### Behoben
+- Druck-Knopf-Label zeigt nun den aktuellen Raumnamen, nicht die statische Default-Bezeichnung.
+- Empty-Eingabe beim Umbenennen erreicht den Backend-Fallback (vorher kam empty nicht durch).
+- Pencil-Icon ist nun ein `<span role="button">` statt verschachteltem `<button>` (gültiges HTML, bessere Accessibility).
+
 ## [1.3.0] — 2026-04-23
 
 ### Hinzugefügt
