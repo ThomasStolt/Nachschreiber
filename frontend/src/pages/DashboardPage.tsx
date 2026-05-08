@@ -8,9 +8,9 @@ import SeatingGrid, { RoomGrid } from '../components/SeatingGrid';
 import ExportButtons from '../components/ExportButtons';
 
 const EMPTY_PLAN: SeatingPlan = {
-  room_a: { room: 'A', name: 'Raum A', label: '≤ 45 min', capacity: 32, assignments: [] },
-  room_b: { room: 'B', name: 'Raum B', label: '46–59 min', capacity: 32, assignments: [] },
-  room_c: { room: 'C', name: 'Raum C', label: '≥ 60 min', capacity: 32, assignments: [] },
+  room_a: { room: 'A', name: 'Raum 1', label: '≤ 45 min', capacity: 32, assignments: [] },
+  room_b: { room: 'B', name: 'Raum 2', label: '46–59 min', capacity: 32, assignments: [] },
+  room_c: { room: 'C', name: 'Raum 3', label: '≥ 60 min', capacity: 32, assignments: [] },
 };
 
 const ROOM_LETTER: Record<'room_a' | 'room_b' | 'room_c', 'A' | 'B' | 'C'> = {

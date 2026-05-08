@@ -9,7 +9,7 @@ const ROOM_DURATION_LABEL: Record<'A' | 'B' | 'C', string> = {
   C: '≥ 60 min',
 };
 
-const DEFAULT_ROOM_LABELS: RoomLabels = { A: 'Raum A', B: 'Raum B', C: 'Raum C' };
+const DEFAULT_ROOM_LABELS: RoomLabels = { A: 'Raum 1', B: 'Raum 2', C: 'Raum 3' };
 
 type Status = { kind: 'idle' } | { kind: 'loading' } | { kind: 'ok'; msg: string } | { kind: 'err'; msg: string };
 
