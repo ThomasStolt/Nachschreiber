@@ -125,7 +125,7 @@ export default function DashboardPage() {
         >
           <StudentForm onEntryAdded={refresh} plan={plan} />
           <div className="border-t pt-4 space-y-2" style={{ borderColor: 'var(--c-border)' }}>
-            <ExportButtons activeRoom={activeRoom} activeRoomName={plan[activeRoom].name} />
+            <ExportButtons activeRoomName={plan[activeRoom].name} />
             <button onClick={handleReset} className="w-full text-sm py-1.5 rounded-lg border transition-colors" style={{ borderColor: 'var(--c-border)', color: 'var(--c-text-secondary)' }}>
               Neue Sitzung
             </button>

@@ -2,7 +2,6 @@
 import { api } from '../api';
 
 interface Props {
-  activeRoom: 'room_a' | 'room_b' | 'room_c';
   activeRoomName: string;
 }
 
