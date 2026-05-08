@@ -201,11 +201,12 @@ function RoomTab({
 
   function commit() {
     setEditing(false);
-    if (draft.trim() && draft.trim() !== name) {
-      onRename(roomLetter, draft.trim());
-    } else {
-      setDraft(name);
+    const trimmed = draft.trim();
+    if (trimmed === name) {
+      return;
     }
+    // empty → backend collapses to default
+    onRename(roomLetter, trimmed);
   }
 
   function cancel() {
@@ -237,6 +238,7 @@ function RoomTab({
           autoFocus
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          onFocus={(e) => e.target.select()}
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.key === 'Enter') { e.preventDefault(); commit(); }
@@ -260,12 +262,21 @@ function RoomTab({
         <>
           <span>{name}</span>
           {isActive && (
-            <button
-              type="button"
+            <span
+              role="button"
+              tabIndex={0}
               className="no-print"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); setDraft(name); setEditing(true); }}
-              aria-label="Raum umbenennen"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDraft(name);
+                  setEditing(true);
+                }
+              }}
+              aria-label={`Raum ${name} umbenennen`}
               title="Raum umbenennen"
               style={{
                 background: 'transparent',
@@ -276,10 +287,12 @@ function RoomTab({
                 lineHeight: 1,
                 color: 'inherit',
                 opacity: 0.85,
+                display: 'inline-flex',
+                alignItems: 'center',
               }}
             >
               ✏️
-            </button>
+            </span>
           )}
         </>
       )}
