@@ -3,15 +3,10 @@ import { api } from '../api';
 
 interface Props {
   activeRoom: 'room_a' | 'room_b' | 'room_c';
+  activeRoomName: string;
 }
 
-const ROOM_NAME: Record<'room_a' | 'room_b' | 'room_c', string> = {
-  room_a: 'Raum 1',
-  room_b: 'Raum 2',
-  room_c: 'Raum 3',
-};
-
-export default function ExportButtons({ activeRoom }: Props) {
+export default function ExportButtons({ activeRoomName }: Props) {
   function download(format: 'excel' | 'word') {
     window.open(api.exportUrl(format), '_blank');
   }
@@ -45,7 +40,7 @@ export default function ExportButtons({ activeRoom }: Props) {
       </div>
       <div className="flex gap-2">
         <button onClick={() => doPrint('single')} className="flex-1 text-sm py-2 px-3 rounded-lg border font-medium" style={printBtnStyle}>
-          🖨️ {ROOM_NAME[activeRoom]}
+          🖨️ {activeRoomName}
         </button>
         <button onClick={() => doPrint('all')} className="flex-1 text-sm py-2 px-3 rounded-lg border font-medium" style={printBtnStyle}>
           🖨️ Alle Räume

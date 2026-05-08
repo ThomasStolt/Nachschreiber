@@ -180,7 +180,7 @@ export default function StudentForm({ onEntryAdded, plan }: Props) {
           </button>
         </div>
         <p className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>
-          ≤45 → Raum 1 · 46–59 → Raum 2 · ≥60 → Raum 3
+          ≤45 → {plan.room_a.name} · 46–59 → {plan.room_b.name} · ≥60 → {plan.room_c.name}
         </p>
       </div>
 

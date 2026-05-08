@@ -97,6 +97,23 @@ export default function DashboardPage() {
     await refresh();
   }
 
+  async function handleRenameRoom(letter: 'A' | 'B' | 'C', newName: string) {
+    const trimmed = newName.trim();
+    // empty → backend collapses to default; we still pass it through
+    const labels = {
+      A: plan.room_a.name,
+      B: plan.room_b.name,
+      C: plan.room_c.name,
+      [letter]: trimmed,
+    };
+    try {
+      await api.putRoomLabels(labels);
+      await refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Umbenennen fehlgeschlagen');
+    }
+  }
+
   const today = new Date().toLocaleDateString('de-DE');
 
   return (
@@ -108,7 +125,7 @@ export default function DashboardPage() {
         >
           <StudentForm onEntryAdded={refresh} plan={plan} />
           <div className="border-t pt-4 space-y-2" style={{ borderColor: 'var(--c-border)' }}>
-            <ExportButtons activeRoom={activeRoom} />
+            <ExportButtons activeRoom={activeRoom} activeRoomName={plan[activeRoom].name} />
             <button onClick={handleReset} className="w-full text-sm py-1.5 rounded-lg border transition-colors" style={{ borderColor: 'var(--c-border)', color: 'var(--c-text-secondary)' }}>
               Neue Sitzung
             </button>
@@ -132,6 +149,7 @@ export default function DashboardPage() {
             onDeleteEntry={handleDeleteEntry}
             onDrop={handleDrop}
             onMoveToRoom={handleMoveToRoom}
+            onRenameRoom={handleRenameRoom}
           />
         </div>
       </div>

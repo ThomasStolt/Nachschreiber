@@ -1,4 +1,5 @@
 // frontend/src/components/SeatingGrid.tsx
+import { useState, useEffect } from 'react';
 import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -11,6 +12,7 @@ interface Props {
   onDeleteEntry: (entryId: string, assignment: SeatAssignment) => void;
   onDrop: (sourceEntryId: string, targetDesk: number, targetSeat: number) => void;
   onMoveToRoom: (sourceEntryId: string, targetRoom: 'A' | 'B' | 'C') => void;
+  onRenameRoom: (letter: 'A' | 'B' | 'C', newName: string) => void;
 }
 
 // ── Seat Slot ─────────────────────────────────────────────────────────────
@@ -180,7 +182,7 @@ export function RoomGrid({
 
 // ── Room Tab (droppable) ──────────────────────────────────────────────────
 function RoomTab({
-  roomKey, roomLetter, name, count, isActive, onClick,
+  roomKey, roomLetter, name, count, isActive, onClick, onRename,
 }: {
   roomKey: 'room_a' | 'room_b' | 'room_c';
   roomLetter: 'A' | 'B' | 'C';
@@ -188,12 +190,33 @@ function RoomTab({
   count: number;
   isActive: boolean;
   onClick: () => void;
+  onRename: (letter: 'A' | 'B' | 'C', newName: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `room-${roomLetter}` });
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+
+  // Sync draft when external name changes (e.g. after refresh)
+  useEffect(() => { setDraft(name); }, [name]);
+
+  function commit() {
+    setEditing(false);
+    if (draft.trim() && draft.trim() !== name) {
+      onRename(roomLetter, draft.trim());
+    } else {
+      setDraft(name);
+    }
+  }
+
+  function cancel() {
+    setEditing(false);
+    setDraft(name);
+  }
+
   return (
     <button
       ref={setNodeRef}
-      onClick={onClick}
+      onClick={editing ? undefined : onClick}
       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
       style={{
         background: isActive ? 'var(--c-accent)' : 'var(--c-surface)',
@@ -204,10 +227,62 @@ function RoomTab({
         boxShadow: isOver ? '0 0 0 2px rgba(245,158,11,0.3)' : undefined,
         outline: isActive && isOver ? '2px dashed white' : undefined,
         outlineOffset: isActive && isOver ? '-5px' : undefined,
+        cursor: editing ? 'text' : 'pointer',
       }}
       data-room-key={roomKey}
     >
-      {name}
+      {editing ? (
+        <input
+          type="text"
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); commit(); }
+            else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{
+            background: 'rgba(255,255,255,0.85)',
+            color: 'var(--c-text)',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '0px 4px',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            width: `${Math.max(draft.length, 6) + 1}ch`,
+            outline: 'none',
+          }}
+        />
+      ) : (
+        <>
+          <span>{name}</span>
+          {isActive && (
+            <button
+              type="button"
+              className="no-print"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); setDraft(name); setEditing(true); }}
+              aria-label="Raum umbenennen"
+              title="Raum umbenennen"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                padding: '0 2px',
+                lineHeight: 1,
+                color: 'inherit',
+                opacity: 0.85,
+              }}
+            >
+              ✏️
+            </button>
+          )}
+        </>
+      )}
       <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--c-bg)' }}>
         {count}/32
       </span>
@@ -223,7 +298,7 @@ const ROOM_LETTER_BY_KEY: Record<'room_a' | 'room_b' | 'room_c', 'A' | 'B' | 'C'
 
 export default function SeatingGrid({
   plan, activeRoom, onActiveRoomChange,
-  onDeleteEntry, onDrop, onMoveToRoom,
+  onDeleteEntry, onDrop, onMoveToRoom, onRenameRoom,
 }: Props) {
   const active = plan[activeRoom];
 
@@ -268,6 +343,7 @@ export default function SeatingGrid({
                 count={count}
                 isActive={activeRoom === key}
                 onClick={() => onActiveRoomChange(key)}
+                onRename={onRenameRoom}
               />
             );
           })}
