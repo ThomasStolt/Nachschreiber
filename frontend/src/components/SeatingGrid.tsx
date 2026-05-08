@@ -8,11 +8,7 @@ interface Props {
   plan: SeatingPlan;
   activeRoom: 'room_a' | 'room_b' | 'room_c';
   onActiveRoomChange: (room: 'room_a' | 'room_b' | 'room_c') => void;
-  onDeleteEntry?: (entryId: string) => void;
-  onDeleteStudent?: (assignment: SeatAssignment) => void;
-  clipboardEntries: SeatAssignment[];
-  onScissors: (assignment: SeatAssignment) => void;
-  onRemoveFromClipboard: (entryId: string) => void;
+  onDeleteEntry: (entryId: string, assignment: SeatAssignment) => void;
   onDrop: (sourceEntryId: string, targetDesk: number, targetSeat: number) => void;
   onMoveToRoom: (sourceEntryId: string, targetRoom: 'A' | 'B' | 'C') => void;
 }
@@ -22,18 +18,12 @@ interface SeatSlotProps {
   desk: number;
   seat: number;
   assignment: SeatAssignment | null;
-  clipboardEntryIds: Set<string>;
-  onScissors: (a: SeatAssignment) => void;
-  onDeleteStudent?: (a: SeatAssignment) => void;
+  onDeleteEntry: (entryId: string, assignment: SeatAssignment) => void;
 }
 
-function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors, onDeleteStudent }: SeatSlotProps) {
+function SeatSlot({ desk, seat, assignment, onDeleteEntry }: SeatSlotProps) {
   const dropId = `${desk}-${seat}`;
-  // dnd-kit requires non-empty id even when disabled
   const dragId = assignment ? `entry-${assignment.entry.id}` : `empty-${desk}-${seat}`;
-
-  // Only true when THIS slot's entry is in the clipboard (fixes empty-slot bug)
-  const isInClipboard = assignment ? clipboardEntryIds.has(assignment.entry.id) : false;
 
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: dropId });
   const {
@@ -44,8 +34,7 @@ function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors, onDel
     isDragging,
   } = useDraggable({
     id: dragId,
-    // Don't allow dragging the ghost source or empty slots
-    disabled: !assignment || isInClipboard,
+    disabled: !assignment,
   });
 
   const dragStyle = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
@@ -56,19 +45,13 @@ function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors, onDel
     padding: '3px 4px',
     minHeight: '2.25rem',
     position: 'relative',
-    cursor: assignment && !isInClipboard ? 'grab' : 'default',
-    background: isInClipboard
-      ? 'rgba(245,158,11,0.08)'
-      : assignment
-        ? 'var(--c-bg)'
-        : undefined,
+    cursor: assignment ? 'grab' : 'default',
+    background: assignment ? 'var(--c-bg)' : undefined,
     border: isOver
       ? '1.5px solid var(--c-accent)'
-      : isInClipboard
-        ? '1px dashed var(--c-accent)'
-        : assignment
-          ? undefined
-          : '1px dashed var(--c-border)',
+      : assignment
+        ? undefined
+        : '1px dashed var(--c-border)',
     opacity: isDragging ? 0.4 : 1,
     boxShadow: isOver ? '0 0 0 1px var(--c-accent)' : undefined,
   };
@@ -76,13 +59,13 @@ function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors, onDel
   return (
     <div ref={setDropRef} style={{ flex: 1 }}>
       <div
-        ref={assignment && !isInClipboard ? setDragRef : null}
+        ref={assignment ? setDragRef : null}
         style={{ ...slotStyle, ...dragStyle }}
-        {...(assignment && !isInClipboard ? { ...attributes, ...listeners } : {})}
+        {...(assignment ? { ...attributes, ...listeners } : {})}
       >
-        {assignment && !isInClipboard ? (
+        {assignment ? (
           <>
-            <p className="font-semibold truncate" style={{ fontSize: '0.7rem', paddingRight: onDeleteStudent ? '44px' : '22px' }}>
+            <p className="font-semibold truncate" style={{ fontSize: '0.7rem', paddingRight: '22px' }}>
               {assignment.student.last_name}, {assignment.student.first_name}
             </p>
             <p className="truncate" style={{ fontSize: '0.65rem', color: 'var(--c-text-secondary)' }}>
@@ -92,9 +75,9 @@ function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors, onDel
               type="button"
               className="no-print"
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => { e.stopPropagation(); onScissors(assignment); }}
-              aria-label="Ausschneiden"
-              title="Ausschneiden"
+              onClick={(e) => { e.stopPropagation(); onDeleteEntry(assignment.entry.id, assignment); }}
+              aria-label="Aus Sitzplan entfernen"
+              title="Aus Sitzplan entfernen"
               style={{
                 position: 'absolute', top: '0', right: '0',
                 background: 'var(--c-surface)', border: '1px solid var(--c-border)',
@@ -102,31 +85,9 @@ function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors, onDel
                 fontSize: '0.8rem', padding: '1px 4px', lineHeight: 1,
               }}
             >
-              ✂️
+              🗑️
             </button>
-            {onDeleteStudent && (
-              <button
-                type="button"
-                className="no-print"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => { e.stopPropagation(); onDeleteStudent(assignment); }}
-                aria-label="Schüler löschen"
-                title="Schüler aus Stammdaten löschen"
-                style={{
-                  position: 'absolute', top: '0', right: '24px',
-                  background: 'var(--c-surface)', border: '1px solid var(--c-border)',
-                  borderRadius: '4px', cursor: 'pointer',
-                  fontSize: '0.8rem', padding: '1px 4px', lineHeight: 1,
-                }}
-              >
-                🗑️
-              </button>
-            )}
           </>
-        ) : isInClipboard ? (
-          <p style={{ fontSize: '0.65rem', color: 'var(--c-accent)', textAlign: 'center', paddingTop: '0.4rem' }}>
-            ✂️ ausgeschnitten
-          </p>
         ) : (
           <p style={{ fontSize: '0.65rem', color: 'var(--c-muted)', textAlign: 'center', paddingTop: '0.4rem' }}>
             frei
@@ -141,13 +102,11 @@ function SeatSlot({ desk, seat, assignment, clipboardEntryIds, onScissors, onDel
 interface DeskCardProps {
   desk: number;
   slots: [SeatAssignment | null, SeatAssignment | null];
-  clipboardEntryIds: Set<string>;
-  onScissors: (a: SeatAssignment) => void;
-  onDeleteStudent?: (a: SeatAssignment) => void;
+  onDeleteEntry: (entryId: string, assignment: SeatAssignment) => void;
 }
 
-function DeskCard({ desk, slots, clipboardEntryIds, onScissors, onDeleteStudent }: DeskCardProps) {
-  const hasOccupied = slots.some(a => a && !clipboardEntryIds.has(a.entry.id));
+function DeskCard({ desk, slots, onDeleteEntry }: DeskCardProps) {
+  const hasOccupied = slots.some(a => a !== null);
   return (
     <div
       className="rounded-lg p-2 text-xs"
@@ -166,9 +125,7 @@ function DeskCard({ desk, slots, clipboardEntryIds, onScissors, onDeleteStudent 
             desk={desk}
             seat={i + 1}
             assignment={a}
-            clipboardEntryIds={clipboardEntryIds}
-            onScissors={onScissors}
-            onDeleteStudent={onDeleteStudent}
+            onDeleteEntry={onDeleteEntry}
           />
         ))}
       </div>
@@ -179,14 +136,10 @@ function DeskCard({ desk, slots, clipboardEntryIds, onScissors, onDeleteStudent 
 // ── Room Grid ─────────────────────────────────────────────────────────────
 export function RoomGrid({
   room_plan,
-  clipboardEntryIds,
-  onScissors,
-  onDeleteStudent,
+  onDeleteEntry,
 }: {
   room_plan: RoomPlan;
-  clipboardEntryIds?: Set<string>;
-  onScissors?: (a: SeatAssignment) => void;
-  onDeleteStudent?: (a: SeatAssignment) => void;
+  onDeleteEntry?: (entryId: string, assignment: SeatAssignment) => void;
 }) {
   const assignmentMap = new Map<string, SeatAssignment>();
   for (const a of room_plan.assignments) {
@@ -204,8 +157,7 @@ export function RoomGrid({
     };
   });
 
-  const ids = clipboardEntryIds ?? new Set<string>();
-  const scissors = onScissors ?? (() => {});
+  const noopDelete = onDeleteEntry ?? (() => {});
 
   return (
     <div className="grid grid-cols-4 gap-2">
@@ -214,103 +166,9 @@ export function RoomGrid({
           key={desk}
           desk={desk}
           slots={slots}
-          clipboardEntryIds={ids}
-          onScissors={scissors}
-          onDeleteStudent={onDeleteStudent}
+          onDeleteEntry={noopDelete}
         />
       ))}
-    </div>
-  );
-}
-
-// ── Clipboard Card (draggable) ────────────────────────────────────────────
-function ClipboardCard({
-  assignment,
-  roomNames,
-  onRemove,
-}: {
-  assignment: SeatAssignment;
-  roomNames: Record<'A' | 'B' | 'C', string>;
-  onRemove: (entryId: string) => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `clip-${assignment.entry.id}`,
-  });
-  const style: React.CSSProperties = {
-    transform: transform ? CSS.Translate.toString(transform) : undefined,
-    opacity: isDragging ? 0.4 : 1,
-    background: 'var(--c-surface)',
-    border: '1px solid var(--c-accent)',
-    borderRadius: '6px',
-    padding: '4px 28px 4px 8px',
-    fontSize: '0.75rem',
-    cursor: 'grab',
-    position: 'relative',
-    display: 'inline-flex',
-    flexDirection: 'column',
-    gap: '1px',
-    minWidth: '160px',
-  };
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <span style={{ fontWeight: 600, color: 'var(--c-text)' }}>
-        {assignment.student.last_name}, {assignment.student.first_name}
-      </span>
-      <span style={{ color: 'var(--c-text-secondary)', fontSize: '0.7rem' }}>
-        {assignment.student.class_name} · {assignment.entry.subject} · {assignment.entry.duration_minutes} min
-      </span>
-      <span style={{ color: 'var(--c-muted)', fontSize: '0.65rem' }}>
-        war: {roomNames[assignment.entry.room]}, Tisch {assignment.desk}
-      </span>
-      <button
-        type="button"
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => { e.stopPropagation(); onRemove(assignment.entry.id); }}
-        aria-label="Aus Zwischenablage entfernen"
-        title="Aus Zwischenablage entfernen"
-        style={{
-          position: 'absolute', top: '2px', right: '2px',
-          background: 'var(--c-bg)', border: '1px solid var(--c-border)',
-          borderRadius: '4px', cursor: 'pointer',
-          fontSize: '0.7rem', padding: '0px 5px', lineHeight: 1.2,
-          color: 'var(--c-text-secondary)',
-        }}
-      >
-        ✕
-      </button>
-    </div>
-  );
-}
-
-function ClipboardStrip({
-  entries,
-  roomNames,
-  onRemove,
-}: {
-  entries: SeatAssignment[];
-  roomNames: Record<'A' | 'B' | 'C', string>;
-  onRemove: (entryId: string) => void;
-}) {
-  return (
-    <div
-      className="px-4 py-2 no-print"
-      style={{
-        background: 'rgba(245,158,11,0.12)',
-        borderBottom: '1px solid rgba(245,158,11,0.3)',
-        display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap',
-      }}
-    >
-      <span style={{ fontSize: '0.85rem' }}>
-        📋 <strong style={{ color: 'var(--c-accent)' }}>Zwischenablage ({entries.length}):</strong>
-      </span>
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flex: 1 }}>
-        {entries.map(a => (
-          <ClipboardCard key={a.entry.id} assignment={a} roomNames={roomNames} onRemove={onRemove} />
-        ))}
-      </div>
-      <span style={{ fontSize: '0.7rem', color: 'var(--c-text-secondary)', fontStyle: 'italic' }}>
-        Karten auf Zielplatz ziehen
-      </span>
     </div>
   );
 }
@@ -360,18 +218,10 @@ const ROOM_LETTER_BY_KEY: Record<'room_a' | 'room_b' | 'room_c', 'A' | 'B' | 'C'
 
 export default function SeatingGrid({
   plan, activeRoom, onActiveRoomChange,
-  clipboardEntries, onScissors, onRemoveFromClipboard, onDrop, onMoveToRoom,
-  onDeleteStudent,
+  onDeleteEntry, onDrop, onMoveToRoom,
 }: Props) {
   const active = plan[activeRoom];
-  const clipboardEntryIds = new Set(clipboardEntries.map(e => e.entry.id));
-  const roomNames: Record<'A' | 'B' | 'C', string> = {
-    A: plan.room_a.name,
-    B: plan.room_b.name,
-    C: plan.room_c.name,
-  };
 
-  // Small activation distance so clicks on scissors / ✕ buttons don't become drags
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
   );
@@ -382,10 +232,8 @@ export default function SeatingGrid({
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    let entryId: string | null = null;
-    if (activeId.startsWith('entry-')) entryId = activeId.substring('entry-'.length);
-    else if (activeId.startsWith('clip-')) entryId = activeId.substring('clip-'.length);
-    if (!entryId) return;
+    if (!activeId.startsWith('entry-')) return;
+    const entryId = activeId.substring('entry-'.length);
 
     if (overId.startsWith('room-')) {
       const letter = overId.substring('room-'.length) as 'A' | 'B' | 'C';
@@ -403,13 +251,9 @@ export default function SeatingGrid({
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col h-full">
-        {clipboardEntries.length > 0 && (
-          <ClipboardStrip entries={clipboardEntries} roomNames={roomNames} onRemove={onRemoveFromClipboard} />
-        )}
-
         <div className="flex gap-2 p-4 pb-2 no-print">
           {ROOM_KEYS.map((key) => {
-            const count = plan[key].assignments.filter(a => !clipboardEntryIds.has(a.entry.id)).length;
+            const count = plan[key].assignments.length;
             return (
               <RoomTab
                 key={key}
@@ -425,15 +269,13 @@ export default function SeatingGrid({
         </div>
 
         <p className="px-4 text-xs pb-2 no-print" style={{ color: 'var(--c-text-secondary)' }}>
-          {active.label} · {active.assignments.filter(a => !clipboardEntryIds.has(a.entry.id)).length} Schüler
+          {active.label} · {active.assignments.length} Schüler
         </p>
 
         <div className="overflow-y-auto flex-1 px-4 pb-4">
           <RoomGrid
             room_plan={active}
-            clipboardEntryIds={clipboardEntryIds}
-            onScissors={onScissors}
-            onDeleteStudent={onDeleteStudent}
+            onDeleteEntry={onDeleteEntry}
           />
         </div>
       </div>

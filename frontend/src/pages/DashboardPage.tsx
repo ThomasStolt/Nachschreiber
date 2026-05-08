@@ -38,7 +38,6 @@ const PRINT_ROOM_KEYS = ['room_a', 'room_b', 'room_c'] as const;
 export default function DashboardPage() {
   const [plan, setPlan] = useState<SeatingPlan>(EMPTY_PLAN);
   const [activeRoom, setActiveRoom] = useState<'room_a' | 'room_b' | 'room_c'>('room_a');
-  const [clipboardEntries, setClipboardEntries] = useState<SeatAssignment[]>([]);
   const navigate = useNavigate();
 
   const refresh = useCallback(async () => {
@@ -50,49 +49,17 @@ export default function DashboardPage() {
   async function handleReset() {
     if (!confirm('Alle Einträge löschen? Die Stammdaten bleiben erhalten.')) return;
     await api.reset();
-    setClipboardEntries([]);
     await refresh();
   }
 
-  async function handleDeleteEntry(entryId: string) {
-    await api.deleteEntry(entryId);
-    setClipboardEntries(prev => prev.filter(e => e.entry.id !== entryId));
-    await refresh();
-  }
-
-  async function handleDeleteStudent(assignment: SeatAssignment) {
-    const studentId = assignment.student.id;
-    const allAssignments = [
-      ...plan.room_a.assignments,
-      ...plan.room_b.assignments,
-      ...plan.room_c.assignments,
-    ];
-    const entryCount = allAssignments.filter(a => a.student.id === studentId).length;
+  async function handleDeleteEntry(entryId: string, assignment: SeatAssignment) {
     const name = `${assignment.student.last_name}, ${assignment.student.first_name}`;
-    const msg = entryCount > 1
-      ? `${name} aus den Stammdaten löschen?\n\n${entryCount} Nachschreib-Einträge werden ebenfalls entfernt.`
-      : `${name} aus den Stammdaten löschen?\n\nDer Nachschreib-Eintrag wird ebenfalls entfernt.`;
-    if (!confirm(msg)) return;
-    try {
-      await api.deleteStudent(studentId);
-      setClipboardEntries(prev => prev.filter(e => e.student.id !== studentId));
-      await refresh();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Löschen fehlgeschlagen');
-    }
+    if (!confirm(`${name} aus dem Sitzplan entfernen?\n\nDie Stammdaten bleiben erhalten.`)) return;
+    await api.deleteEntry(entryId);
+    await refresh();
   }
 
-  function handleScissors(assignment: SeatAssignment) {
-    setClipboardEntries(prev =>
-      prev.some(e => e.entry.id === assignment.entry.id) ? prev : [...prev, assignment]
-    );
-  }
-
-  function handleRemoveFromClipboard(entryId: string) {
-    setClipboardEntries(prev => prev.filter(e => e.entry.id !== entryId));
-  }
-
-  // Unified drop handler: works for both seat-to-seat and clipboard-to-seat
+  // Drop handler: seat-to-seat move within a room
   async function handleDrop(sourceEntryId: string, targetDesk: number, targetSeat: number) {
     try {
       await api.moveEntry(sourceEntryId, {
@@ -100,7 +67,6 @@ export default function DashboardPage() {
         seat: targetSeat,
         room: ROOM_LETTER[activeRoom],
       });
-      setClipboardEntries(prev => prev.filter(e => e.entry.id !== sourceEntryId));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Fehler beim Verschieben');
     }
@@ -115,9 +81,7 @@ export default function DashboardPage() {
       ...plan.room_c.assignments,
     ];
     const source = allAssignments.find(a => a.entry.id === sourceEntryId);
-    // Skip if already in target room and not coming from clipboard
-    const fromClipboard = clipboardEntries.some(e => e.entry.id === sourceEntryId);
-    if (source && source.entry.room === targetRoom && !fromClipboard) return;
+    if (source && source.entry.room === targetRoom) return;
 
     const free = findNextFreeSeat(plan, targetRoom);
     if (!free) {
@@ -126,7 +90,6 @@ export default function DashboardPage() {
     }
     try {
       await api.moveEntry(sourceEntryId, { desk: free.desk, seat: free.seat, room: targetRoom });
-      setClipboardEntries(prev => prev.filter(e => e.entry.id !== sourceEntryId));
       setActiveRoom(ROOM_KEY[targetRoom]);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Fehler beim Verschieben');
@@ -167,10 +130,6 @@ export default function DashboardPage() {
             activeRoom={activeRoom}
             onActiveRoomChange={setActiveRoom}
             onDeleteEntry={handleDeleteEntry}
-            onDeleteStudent={handleDeleteStudent}
-            clipboardEntries={clipboardEntries}
-            onScissors={handleScissors}
-            onRemoveFromClipboard={handleRemoveFromClipboard}
             onDrop={handleDrop}
             onMoveToRoom={handleMoveToRoom}
           />
