@@ -6,9 +6,9 @@ interface Props {
 }
 
 const ROOM_NAME: Record<'room_a' | 'room_b' | 'room_c', string> = {
-  room_a: 'Raum A',
-  room_b: 'Raum B',
-  room_c: 'Raum C',
+  room_a: 'Raum 1',
+  room_b: 'Raum 2',
+  room_c: 'Raum 3',
 };
 
 export default function ExportButtons({ activeRoom }: Props) {
