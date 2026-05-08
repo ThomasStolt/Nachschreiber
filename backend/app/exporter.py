@@ -120,7 +120,8 @@ def _render_room_grid(ws, room_plan: RoomPlan, title: str) -> None:
         excel_row = _FIRST_SEAT_ROW + row_idx
         ws.row_dimensions[excel_row].height = _SEAT_ROW_HEIGHT
         for desk_col in range(4):  # 4 desks per row
-            desk_number = row_idx * 4 + desk_col + 1  # 1..16
+            # Tisch 1 unten rechts, Tisch 16 oben links — Mapping spiegelt beide Achsen
+            desk_number = (3 - row_idx) * 4 + (3 - desk_col) + 1  # 1..16
             for seat_in_desk in range(2):
                 seat_number = seat_in_desk + 1  # 1 or 2
                 excel_col = desk_col * 2 + seat_in_desk + 1
