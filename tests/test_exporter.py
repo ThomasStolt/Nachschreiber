@@ -28,7 +28,7 @@ def test_excel_has_three_sheets():
     plan = compute_seating(session)
     buf = build_excel(plan)
     wb = openpyxl.load_workbook(io.BytesIO(buf))
-    assert set(wb.sheetnames) == {"Raum A", "Raum B", "Raum C"}
+    assert set(wb.sheetnames) == {"Raum 1", "Raum 2", "Raum 3"}
 
 
 def test_excel_grid_has_title_and_lehrpult_rows():
@@ -36,9 +36,9 @@ def test_excel_grid_has_title_and_lehrpult_rows():
     plan = compute_seating(session)
     buf = build_excel(plan)
     wb = openpyxl.load_workbook(io.BytesIO(buf))
-    ws = wb["Raum A"]
+    ws = wb["Raum 1"]
     # Row 1 = title (merged A1:H1), Row 2 = Lehrpult (merged A2:H2)
-    assert "Raum A" in (ws.cell(1, 1).value or "")
+    assert "Raum 1" in (ws.cell(1, 1).value or "")
     assert (ws.cell(2, 1).value or "").strip() == "Lehrpult"
 
 
@@ -48,7 +48,7 @@ def test_excel_grid_seat_1_1_holds_first_entry():
     plan = compute_seating(session)
     buf = build_excel(plan)
     wb = openpyxl.load_workbook(io.BytesIO(buf))
-    ws = wb["Raum A"]
+    ws = wb["Raum 1"]
     text = str(ws.cell(4, 1).value or "")
     assert "Müller, Anna" in text
     assert "10a" in text
@@ -64,7 +64,7 @@ def test_excel_grid_empty_seat_shows_only_label():
     plan = compute_seating(session)
     buf = build_excel(plan)
     wb = openpyxl.load_workbook(io.BytesIO(buf))
-    ws = wb["Raum A"]
+    ws = wb["Raum 1"]
     # Desk 1, Seat 2 → row 4, col 2 (seats within a desk are adjacent columns)
     text = str(ws.cell(4, 2).value or "").strip()
     assert text == "T1.S2"
@@ -75,7 +75,7 @@ def test_excel_grid_second_desk_first_seat_is_empty_with_label():
     plan = compute_seating(session)
     buf = build_excel(plan)
     wb = openpyxl.load_workbook(io.BytesIO(buf))
-    ws = wb["Raum A"]
+    ws = wb["Raum 1"]
     # Desk 2, Seat 1 → row 4, col 3
     text = str(ws.cell(4, 3).value or "").strip()
     assert text == "T2.S1"
@@ -86,7 +86,7 @@ def test_excel_grid_last_row_corresponds_to_desks_13_to_16():
     plan = compute_seating(session)
     buf = build_excel(plan)
     wb = openpyxl.load_workbook(io.BytesIO(buf))
-    ws = wb["Raum A"]
+    ws = wb["Raum 1"]
     # Desk 13 Seat 1 → row 7, col 1
     text = str(ws.cell(7, 1).value or "").strip()
     assert text == "T13.S1"
@@ -100,7 +100,7 @@ def test_excel_grid_landscape():
     plan = compute_seating(session)
     buf = build_excel(plan)
     wb = openpyxl.load_workbook(io.BytesIO(buf))
-    for name in ("Raum A", "Raum B", "Raum C"):
+    for name in ("Raum 1", "Raum 2", "Raum 3"):
         assert wb[name].page_setup.orientation == "landscape"
 
 

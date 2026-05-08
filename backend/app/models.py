@@ -61,9 +61,9 @@ class SeatingPlan(BaseModel):
 
 
 class RoomLabels(BaseModel):
-    A: str = "Raum A"
-    B: str = "Raum B"
-    C: str = "Raum C"
+    A: str = "Raum 1"
+    B: str = "Raum 2"
+    C: str = "Raum 3"
 
 
 class SessionData(BaseModel):

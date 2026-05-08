@@ -401,7 +401,7 @@ def test_same_room_move_keeps_duration(client):
 def test_get_room_labels_defaults(client):
     r = client.get("/api/room-labels")
     assert r.status_code == 200
-    assert r.json() == {"A": "Raum A", "B": "Raum B", "C": "Raum C"}
+    assert r.json() == {"A": "Raum 1", "B": "Raum 2", "C": "Raum 3"}
 
 
 def test_put_room_labels(client):
@@ -414,7 +414,7 @@ def test_put_room_labels(client):
 def test_put_room_labels_blank_falls_back_to_default(client):
     r = client.put("/api/room-labels", json={"A": "", "B": "   ", "C": "Aula"})
     assert r.status_code == 200
-    assert r.json() == {"A": "Raum A", "B": "Raum B", "C": "Aula"}
+    assert r.json() == {"A": "Raum 1", "B": "Raum 2", "C": "Aula"}
 
 
 def test_put_room_labels_does_not_reset_students_or_entries(client):
