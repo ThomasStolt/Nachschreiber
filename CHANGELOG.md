@@ -5,6 +5,18 @@ Alle relevanten Änderungen an Nachschreiber werden in dieser Datei dokumentiert
 Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.4.1] — 2026-05-30
+
+### Sicherheit
+- **Upload-Größenlimit** — alle drei Upload-Endpunkte (`/upload`, `/upload/teachers`, `/upload/subjects`) prüfen jetzt Dateigröße (max 1 MB) und Dateiendung (`.csv`); bisher wurden beliebig große Dateien ohne Prüfung in den Speicher geladen.
+
+### Behoben
+- **Session-Korruption sichtbar** — `session.load()` loggt jetzt den Fehler nach stderr, bevor es eine leere Session zurückgibt; bisher waren Korruptionen stille Datenverluste.
+
+### Known issues
+- CORS ist als `allow_origins=["*"]` konfiguriert; für den internen Betrieb ausreichend, sollte bei öffentlichem Deployment auf den tatsächlichen Frontend-Origin eingeschränkt werden.
+- `/api/reset` erfordert keine Bestätigung; ein versehentlicher Aufruf löscht alle Sitzplan-Einträge unwiderruflich.
+
 ## [1.4.0] — 2026-05-08
 
 ### Geändert

@@ -1,8 +1,11 @@
 # backend/app/session.py
 import json
+import logging
 import os
 from pathlib import Path
 from .models import SessionData
+
+_log = logging.getLogger(__name__)
 
 
 def _data_path() -> Path:
@@ -39,7 +42,8 @@ def load() -> SessionData:
     try:
         raw = json.loads(p.read_text(encoding="utf-8"))
         return SessionData.model_validate(_migrate(raw))
-    except Exception:
+    except Exception as exc:
+        _log.error("Corrupt session file, starting fresh: %s", exc)
         return SessionData()
 
 
