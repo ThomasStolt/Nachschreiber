@@ -5,6 +5,13 @@ Alle relevanten Änderungen an Nachschreiber werden in dieser Datei dokumentiert
 Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.5.0] — 2026-05-30
+
+### Geändert
+- **Header neu** — gleicher Stil wie Kurswahl: Amber-Logo-Badge (`NS`), App-Name in Bricolage Grotesque, Versions-Badge (`v1.5.0`), SVG-Dark-Mode-Toggle (Sonne/Mond). Sticky mit Backdrop-Blur und Glaseffekt.
+- **Dark-Mode-Toggle** — von Emoji auf SVG-Icons umgestellt.
+- `__APP_VERSION__` wird jetzt zur Build-Zeit per Vite `define` injiziert (analog zu Kurswahl), statt über einen `import pkg` zur Laufzeit.
+
 ## [1.4.1] — 2026-05-30
 
 ### Sicherheit
